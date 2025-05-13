@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block title %}Page Not Found - TowNow{% endblock %}
+
+{% block header_title %}Oops! Page Not Found (404){% endblock %}
+{% block header_subtitle %}We can\'t seem to find the page you\'re looking for.{% endblock %}
+
+{% block content %}
+<section id="error-page" class="text-center">
+    <p>The page you requested might have been moved, deleted, or perhaps you mistyped the URL.</p>
+    <p>Let\'s get you back on track:</p>
+    <p><a href="{{ url_for("main.home") }}" class="btn">Go to Homepage</a></p>
+    <div style="margin-top: 30px;">
+        <i data-lucide="traffic-cone" style="font-size: 4rem; color: #ffc107;"></i>
+    </div>
+</section>
+{% endblock %}
+

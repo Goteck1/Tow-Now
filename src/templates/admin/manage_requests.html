@@ -1,0 +1,92 @@
+{% extends "admin/admin_base.html" %}
+
+{% block admin_title %}Manage Service Requests - TowNow Admin{% endblock %}
+
+{% block admin_page_title %}Service Request Management{% endblock %}
+
+{% block admin_content %}
+<section id="manage-requests-section">
+    <div class="card">
+        <h4><i data-lucide="clipboard-list" class="icon"></i> All Service Requests ({{ requests|length if requests else 0 }})</h4>
+        
+        {% if requests %}
+            <div style="overflow-x: auto;">
+                <table class="admin-table mt-1">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>User/Guest</th>
+                            <th>Contact</th>
+                            <th>Location</th>
+                            <th>Destination</th>
+                            <th>Vehicle</th>
+                            <th>Price (€)</th>
+                            <th>Status</th>
+                            <th>Provider ID</th>
+                            <th>Requested At</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for req in requests %}
+                            <tr>
+                                <td>{{ req.id }}</td>
+                                <td>
+                                    {% if req.user %}
+                                        <a href="#" title="View User {{ req.user.fullname }}">{{ req.user.fullname }} (User ID: {{ req.user.id }})</a>
+                                    {% elif req.guest_name %}
+                                        {{ req.guest_name }} (Guest)
+                                    {% else %}
+                                        N/A
+                                    {% endif %}
+                                </td>
+                                <td>{{ req.user.email if req.user else req.guest_phone if req.guest_phone else "N/A" }}</td>
+                                <td>{{ req.current_location }}</td>
+                                <td>{{ req.destination }}</td>
+                                <td>{{ req.vehicle_type }}{% if req.vehicle_other %} ({{ req.vehicle_other }}){% endif %}</td>
+                                <td>{{ "%.2f"|format(req.price) if req.price else "N/A" }}</td>
+                                <td><span class="badge status-{{ req.status.lower().replace(" ", "-") }}">{{ req.status }}</span></td>
+                                <td>{{ req.provider_id if req.provider_id else "Not Assigned" }}</td>
+                                <td>{{ req.created_at.strftime("%Y-%m-%d %H:%M") if req.created_at else "N/A"}}</td>
+                                <td class="actions">
+                                    <a href="#" title="View Details"><i data-lucide="eye"></i></a>
+                                    <a href="#" title="Edit Request"><i data-lucide="edit-2"></i></a>
+                                    <!-- Add more actions like assign provider, change status -->
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p>No service requests found.</p>
+        {% endif %}
+    </div>
+</section>
+
+<style>
+.badge {
+    display: inline-block;
+    padding: .25em .4em;
+    font-size: 75%;
+    font-weight: 700;
+    line-height: 1;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    border-radius: .25rem;
+    color: #fff;
+}
+.status-pending-payment { background-color: #ffc107; color: #333;}
+.status-paid { background-color: #28a745; }
+.status-assigned { background-color: #17a2b8; }
+.status-en-route { background-color: #007bff; }
+.status-completed { background-color: #6c757d; }
+.status-cancelled { background-color: #dc3545; }
+.admin-table .actions .icon {
+    width: 16px;
+    height: 16px;
+}
+</style>
+{% endblock %}
+

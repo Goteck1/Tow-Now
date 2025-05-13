@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+
+{% block title %}Q&A - TowNow{% endblock %}
+
+{% block header_title %}Frequently Asked Questions{% endblock %}
+{% block header_subtitle %}Find answers to common questions about TowNow services in Dublin.{% endblock %}
+
+{% block content %}
+<section id="qa-section" class="mb-2">
+    <div class="accordion">
+        <div class="card accordion-item">
+            <button class="accordion-header" aria-expanded="false" aria-controls="faq1">
+                <h4><i data-lucide="help-circle" class="icon"></i> How do I request a tow?</h4>
+                <i data-lucide="chevron-down" class="icon-toggle"></i>
+            </button>
+            <div id="faq1" class="accordion-content" style="display: none;">
+                <p>Requesting a tow is simple! Go to our "Request Tow" page (easily accessible from the main menu or homepage). You will be guided through three steps: 
+                <ol>
+                    <li><strong>Enter Location:</strong> Provide your current location and where you need the vehicle towed. You can use GPS or type the address.</li>
+                    <li><strong>Select Vehicle:</strong> Choose your vehicle type (e.g., car, SUV, motorcycle) to ensure we send the appropriate tow truck.</li>
+                    <li><strong>Confirm & Pay:</strong> Review the estimated price and complete the secure online payment.</li>
+                </ol>
+                Once payment is confirmed, our system automatically assigns the nearest available tow truck to assist you promptly. You can also choose to "Continue as Guest" if you don\'t want to create an account immediately.</p>
+            </div>
+        </div>
+
+        <div class="card accordion-item">
+            <button class="accordion-header" aria-expanded="false" aria-controls="faq2">
+                <h4><i data-lucide="car" class="icon"></i> What types of vehicles can TowNow tow?</h4>
+                <i data-lucide="chevron-down" class="icon-toggle"></i>
+            </button>
+            <div id="faq2" class="accordion-content" style="display: none;">
+                <p>TowNow can handle a wide range of vehicles, including: Sedans, Hatchbacks, Compact Cars, SUVs, 4x4s, Small Vans, Large Vans, Pickup Trucks, Light Commercial Vehicles, Motorcycles, and Scooters. If you have a vehicle type not explicitly listed, you can select "Other" and provide details during the request process.</p>
+            </div>
+        </div>
+
+        <div class="card accordion-item">
+            <button class="accordion-header" aria-expanded="false" aria-controls="faq3">
+                <h4><i data-lucide="dollar-sign" class="icon"></i> How is the service price calculated?</h4>
+                <i data-lucide="chevron-down" class="icon-toggle"></i>
+            </button>
+            <div id="faq3" class="accordion-content" style="display: none;">
+                <p>Our pricing is transparent. The cost is primarily based on the distance of the tow (from your current location to your specified destination) and the type of vehicle being towed. You will see a clear, estimated price before you confirm your request and make any payment. There are no hidden fees.</p>
+            </div>
+        </div>
+
+        <div class="card accordion-item">
+            <button class="accordion-header" aria-expanded="false" aria-controls="faq4">
+                <h4><i data-lucide="lock" class="icon"></i> Is the online payment process secure?</h4>
+                <i data-lucide="chevron-down" class="icon-toggle"></i>
+            </button>
+            <div id="faq4" class="accordion-content" style="display: none;">
+                <p>Absolutely. We prioritize your security. All online payments are processed through a secure, encrypted payment gateway, ensuring your financial information is protected at all times.</p>
+            </div>
+        </div>
+
+        <div class="card accordion-item">
+            <button class="accordion-header" aria-expanded="false" aria-controls="faq5">
+                <h4><i data-lucide="clock" class="icon"></i> How long will it take for the tow truck to arrive?</h4>
+                <i data-lucide="chevron-down" class="icon-toggle"></i>
+            </button>
+            <div id="faq5" class="accordion-content" style="display: none;">
+                <p>Arrival times can vary depending on your exact location within Dublin, current traffic conditions, and the real-time availability of our tow truck providers. Our system is designed to dispatch the nearest available unit to minimize your waiting time. You will receive an Estimated Time of Arrival (ETA) once a tow truck is assigned to your request.</p>
+            </div>
+        </div>
+        
+        <div class="card accordion-item">
+            <button class="accordion-header" aria-expanded="false" aria-controls="faq6">
+                <h4><i data-lucide="user-x" class="icon"></i> Can I request a tow without creating an account?</h4>
+                <i data-lucide="chevron-down" class="icon-toggle"></i>
+            </button>
+            <div id="faq6" class="accordion-content" style="display: none;">
+                <p>Yes! We understand that when you need a tow, you need it fast. You can use our "Continue as Guest" option during the service request process. We only ask for essential contact information (name and phone number) to facilitate the service. Creating an account is optional but recommended for faster future requests and to track your service history.</p>
+            </div>
+        </div>
+
+        <div class="card accordion-item">
+            <button class="accordion-header" aria-expanded="false" aria-controls="faq7">
+                <h4><i data-lucide="message-square" class="icon"></i> What if I have an issue or need to cancel a request?</h4>
+                <i data-lucide="chevron-down" class="icon-toggle"></i>
+            </button>
+            <div id="faq7" class="accordion-content" style="display: none;">
+                <p>If you encounter any issues with the service or need to inquire about cancelling a request, please contact our customer support team as soon as possible. You can find our contact details on the "Contact Us" page. Cancellation policies may apply depending on the status of your request.</p>
+            </div>
+        </div>
+
+    </div>
+</section>
+
+<style>
+.accordion-item {
+    margin-bottom: 0.5rem;
+    border: 1px solid #e0e0e0;
+}
+.accordion-header {
+    background-color: #f8f9fa;
+    padding: 1rem 1.5rem;
+    width: 100%;
+    text-align: left;
+    border: none;
+    border-bottom: 1px solid #e0e0e0; /* Separator for collapsed items */
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background-color 0.3s ease;
+}
+.accordion-header:hover {
+    background-color: #e9ecef;
+}
+.accordion-header h4 {
+    margin: 0;
+    font-size: 1.1rem;
+    color: #00529b;
+    display: flex;
+    align-items: center;
+}
+.accordion-header .icon {
+    margin-right: 10px;
+}
+.accordion-header .icon-toggle {
+    transition: transform 0.3s ease;
+}
+.accordion-header[aria-expanded="true"] .icon-toggle {
+    transform: rotate(180deg);
+}
+.accordion-header[aria-expanded="true"] {
+    border-bottom: none; /* No border when expanded */
+}
+.accordion-content {
+    padding: 1.5rem;
+    background-color: #fff;
+    border-top: 1px solid #e0e0e0; /* Separator for content */
+}
+.accordion-content p, .accordion-content ol {
+    margin-bottom: 0;
+}
+.accordion-content ol {
+    padding-left: 20px;
+    margin-top: 0.5rem;
+}
+.accordion-content ol li {
+    margin-bottom: 0.25rem;
+}
+</style>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.querySelectorAll(".accordion-header").forEach(button => {
+        button.addEventListener("click", () => {
+            const accordionContent = button.nextElementSibling;
+            const isExpanded = button.getAttribute("aria-expanded") === "true" || false;
+            
+            button.setAttribute("aria-expanded", !isExpanded);
+            accordionContent.style.display = isExpanded ? "none" : "block";
+            
+            // Optional: Close other accordions when one is opened
+            // document.querySelectorAll(".accordion-header").forEach(otherButton => {
+            //     if (otherButton !== button) {
+            //         otherButton.setAttribute("aria-expanded", "false");
+            //         otherButton.nextElementSibling.style.display = "none";
+            //     }
+            // });
+        });
+    });
+</script>
+{% endblock %}
+

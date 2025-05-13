@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+
+{% block title %}Request a Tow - TowNow{% endblock %}
+
+{% block header_title %}Request Towing Service{% endblock %}
+{% block header_subtitle %}Fast and easy. Tell us where you are, and we will connect you with help.{% endblock %}
+
+{% block content %}
+<section id="service-request-flow-section" class="card" style="max-width: 650px; margin: 2rem auto;">
+    <form action="{{ url_for("main.submit_service_request") }}" method="POST" id="towRequestForm">
+        
+        {% if request.args.get("guest") == "True" %}
+            <input type="hidden" name="guest_checkout" value="true">
+            <div class="guest-info-step card mb-2" id="guest-info-step" style="padding: 1rem; background-color: #e6f2ff;">
+                <h3 class="text-center" style="color: #0056b3; margin-bottom: 1rem;"><i data-lucide="user-check" class="icon"></i> Guest Checkout</h3>
+                <p class="text-center" style="font-size: 0.9rem; margin-bottom: 1rem;">Please provide your name and phone number so we can contact you regarding your service.</p>
+                <div class="form-group">
+                    <label for="guest_name">Full Name:</label>
+                    <input type="text" id="guest_name" name="guest_name" placeholder="Your Full Name" required>
+                </div>
+                <div class="form-group">
+                    <label for="guest_phone">Phone Number:</label>
+                    <input type="tel" id="guest_phone" name="guest_phone" placeholder="Your Phone Number (e.g., 08X XXX XXXX)" required>
+                </div>
+            </div>
+        {% endif %}
+
+        <!-- Step 1: Location and Destination -->
+        <div id="step-1" class="request-step active-step">
+            <h3 class="text-center"><span class="step-number">1</span> Location & Destination</h3>
+            <div class="form-group">
+                <label for="current_location"><i data-lucide="map-pin" class="icon"></i> Current Location:</label>
+                <input type="text" id="current_location" name="current_location" placeholder="E.g., 123 Main St, Dublin or use GPS" required>
+                <button type="button" id="use_gps_location" class="btn btn-secondary btn-sm mt-1" style="width: auto; font-size: 0.85rem; padding: 0.4rem 0.8rem;">Use My GPS Location</button>
+            </div>
+            <div class="form-group">
+                <label for="destination"><i data-lucide="route" class="icon"></i> Destination Address:</label>
+                <input type="text" id="destination" name="destination" placeholder="E.g., Your Home or Mechanic Garage" required>
+            </div>
+            <div class="step-navigation">
+                <button type="button" onclick="nextStep(2)" class="btn btn-primary btn-full-width">Next: Vehicle Details</button>
+            </div>
+        </div>
+
+        <!-- Step 2: Vehicle Type -->
+        <div id="step-2" class="request-step" style="display:none;">
+            <h3 class="text-center"><span class="step-number">2</span> Vehicle Details</h3>
+            <div class="form-group">
+                <label for="vehicle_type"><i data-lucide="car" class="icon"></i> Select Vehicle Type:</label>
+                <select id="vehicle_type" name="vehicle_type" required>
+                    <option value="" disabled selected>-- Select your vehicle --</option>
+                    <option value="sedan">Sedan / Hatchback / Compact Car</option>
+                    <option value="suv">SUV / 4x4 / Small Van</option>
+                    <option value="truck">Large Van / Pickup Truck / Light Commercial</option>
+                    <option value="motorcycle">Motorcycle / Scooter</option>
+                    <option value="other">Other (Please specify below)</option>
+                </select>
+            </div>
+            <div class="form-group" id="vehicle_other_group" style="display:none;">
+                <label for="vehicle_other">Specify Other Vehicle Type:</label>
+                <input type="text" id="vehicle_other" name="vehicle_other" placeholder="E.g., Minibus, Small Tractor">
+            </div>
+            <div class="form-group">
+                <label for="vehicle_details"><i data-lucide="info" class="icon"></i> Additional Details (Optional):</label>
+                <input type="text" id="vehicle_details" name="vehicle_details" placeholder="E.g., Color, Model, Issue (flat tire, won_t start)">
+            </div>
+            <div class="step-navigation">
+                <button type="button" onclick="prevStep(1)" class="btn btn-secondary">Previous</button>
+                <button type="button" onclick="nextStep(3)" class="btn btn-primary">Next: Confirm & Pay</button>
+            </div>
+        </div>
+
+        <!-- Step 3: View Price and Pay -->
+        <div id="step-3" class="request-step" style="display:none;">
+            <h3 class="text-center"><span class="step-number">3</span> Confirmation & Payment</h3>
+            <div id="price-summary" class="card mb-1" style="background-color: #f8f9fa; padding: 1rem;">
+                <h4 style="color: #0056b3; margin-bottom: 0.8rem;">Service Summary:</h4>
+                <p><strong>Your Location:</strong> <span id="summary_current_location"></span></p>
+                <p><strong>Destination:</strong> <span id="summary_destination"></span></p>
+                <p><strong>Vehicle:</strong> <span id="summary_vehicle_type"></span></p>
+                <p><strong>Estimated Price:</strong> <strong id="estimated_price" style="font-size: 1.1em; color: #007bff;">Calculating...</strong></p> 
+            </div>
+            <p class="text-center" style="font-size: 0.9rem; margin-top: 1rem;">You will be redirected to a secure payment platform to complete your request. We will contact you shortly after payment to confirm dispatch.</p>
+            <div class="step-navigation">
+                <button type="button" onclick="prevStep(2)" class="btn btn-secondary">Previous</button>
+                <button type="submit" class="btn btn-primary btn-full-width">Confirm & Proceed to Payment</button>
+            </div>
+        </div>
+    </form>
+</section>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const steps = document.querySelectorAll(".request-step");
+    let currentStep = 1;
+
+    function showStep(stepNumber) {
+        steps.forEach(step => step.style.display = "none");
+        const activeStep = document.getElementById("step-" + stepNumber);
+        if (activeStep) {
+            activeStep.style.display = "block";
+        }
+        currentStep = stepNumber;
+    }
+
+    function nextStep(step) {
+        let valid = true;
+        if (currentStep === 1) {
+            if (!document.getElementById("current_location").value || !document.getElementById("destination").value) {
+                alert("Please fill in current location and destination.");
+                valid = false;
+            }
+        } else if (currentStep === 2) {
+            if (!document.getElementById("vehicle_type").value) {
+                alert("Please select your vehicle type.");
+                valid = false;
+            }
+            if (document.getElementById("vehicle_type").value === "other" && !document.getElementById("vehicle_other").value) {
+                alert("Please specify your vehicle type if you selected Other.");
+                valid = false;
+            }
+        }
+        
+        if (!valid) return;
+
+        showStep(step);
+
+        if (step === 3) {
+            document.getElementById("summary_current_location").textContent = document.getElementById("current_location").value;
+            document.getElementById("summary_destination").textContent = document.getElementById("destination").value;
+            let vehicleSelect = document.getElementById("vehicle_type");
+            let vehicleType = vehicleSelect.options[vehicleSelect.selectedIndex].text;
+            if (vehicleSelect.value === "other") {
+                vehicleType += ": " + document.getElementById("vehicle_other").value;
+            }
+            document.getElementById("summary_vehicle_type").textContent = vehicleType;
+            document.getElementById("estimated_price").textContent = "€XX.XX"; // Placeholder price
+        }
+    }
+
+    function prevStep(step) {
+        showStep(step);
+    }
+
+    document.getElementById("vehicle_type").addEventListener("change", function() {
+        const otherGroup = document.getElementById("vehicle_other_group");
+        const otherInput = document.getElementById("vehicle_other");
+        if (this.value === "other") {
+            otherGroup.style.display = "block";
+            otherInput.required = true;
+        } else {
+            otherGroup.style.display = "none";
+            otherInput.required = false;
+            otherInput.value = "";
+        }
+    });
+
+    document.getElementById("use_gps_location").addEventListener("click", function() {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(function(position) {
+                document.getElementById("current_location").value = `Lat: ${position.coords.latitude.toFixed(5)}, Lon: ${position.coords.longitude.toFixed(5)}`;
+            }, function() {
+                alert("Could not get GPS location. Please enter manually.");
+            });
+        } else {
+            alert("Geolocation is not supported by this browser. Please enter your location manually.");
+        }
+    });
+
+    showStep(1);
+
+</script>
+{% endblock %}
+

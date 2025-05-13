@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}TowNow{% endblock %}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Arial:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style_pptx.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/lucide/dist/umd/lucide.min.js"></script>
+    {% block head_extra %}{% endblock %}
+</head>
+<body>
+    <nav>
+        <div class="container">
+            <a href="{{ url_for('main.home') }}" class="logo-link">
+                <img src="{{ url_for('static', filename='images/townow_logo_placeholder.png') }}" alt="TowNow Logo" class="logo-img">
+                <span>TowNow</span>
+            </a>
+            <button class="mobile-nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+                <i data-lucide="menu"></i>
+            </button>
+            <ul class="nav-links">
+                <li><a href="{{ url_for('main.home') }}" class="{% if request.endpoint == 'main.home' %}active{% endif %}">Home</a></li>
+                <li><a href="{{ url_for('main.service_request') }}" class="{% if request.endpoint == 'main.service_request' %}active{% endif %}">Request Tow</a></li>
+                <li><a href="{{ url_for('main.qa') }}" class="{% if request.endpoint == 'main.qa' %}active{% endif %}">Q&A</a></li>
+                <li><a href="{{ url_for('main.contact') }}" class="{% if request.endpoint == 'main.contact' %}active{% endif %}">Contact</a></li>
+                {% if current_user and current_user.is_authenticated %}
+                    {% if current_user.user_type == 'provider' %}
+                        <li><a href="{{ url_for('main.service_provider_home') }}" class="{% if request.endpoint == 'main.service_provider_home' %}active{% endif %}">Provider Home</a></li>
+                    {% else %}
+                        <li><a href="{{ url_for('main.user_home') }}" class="{% if request.endpoint == 'main.user_home' %}active{% endif %}">My Account</a></li>
+                    {% endif %}
+                    <li><a href="{{ url_for('main.logout') }}">Logout</a></li>
+                {% else %}
+                    <li><a href="{{ url_for('main.signin') }}" class="{% if request.endpoint == 'main.signin' %}active{% endif %}">Sign In</a></li>
+                    <li><a href="{{ url_for('main.signup') }}" class="{% if request.endpoint == 'main.signup' %}active{% endif %}">Sign Up</a></li>
+                {% endif %}
+            </ul>
+        </div>
+    </nav>
+
+    {% if request.endpoint == 'main.home' %}
+        <header class="home-hero">
+            <div class="container">
+                <h1>{% block hero_title %}TowNow: Fast Towing Service{% endblock %}</h1>
+                <p>{% block hero_subtitle %}Reliable roadside assistance in Dublin, 24/7.{% endblock %}</p>
+                {% block hero_cta %}
+                <a href="{{ url_for('main.service_request') }}" class="btn btn-light" style="background-color: #ffffff; color: #007bff;">Request a Tow Now</a>
+                {% endblock %}
+            </div>
+        </header>
+    {% else %}
+        <header class="page-header">
+            <div class="container">
+                <h1>{% block header_title %}Welcome to TowNow{% endblock %}</h1>
+                <p class="subtitle">{% block header_subtitle %}Your fast and reliable towing solution.{% endblock %}</p>
+            </div>
+        </header>
+    {% endif %}
+
+    <main>
+        <div class="container content-container">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            {% block content %}
+            <!-- Page specific content will go here -->
+            {% endblock %}
+        </div>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; <span id="current-year"></span> TowNow - All rights reserved. Dublin, Ireland.</p>
+            <p><a href="#">Privacy Policy</a> | <a href="#">Terms of Service</a></p>
+        </div>
+    </footer>
+
+    <script>
+        lucide.createIcons();
+        document.getElementById("current-year").textContent = new Date().getFullYear();
+        
+        const mobileNavToggle = document.querySelector('.mobile-nav-toggle');
+        const navLinks = document.querySelector('.nav-links');
+        if (mobileNavToggle && navLinks) {
+            mobileNavToggle.addEventListener('click', () => {
+                const isExpanded = mobileNavToggle.getAttribute('aria-expanded') === 'true' || false;
+                mobileNavToggle.setAttribute('aria-expanded', !isExpanded);
+                navLinks.classList.toggle('active'); // Toggle 'active' class to show/hide
+            });
+        }
+    </script>
+    {% block scripts %}
+    <!-- Page specific scripts will go here -->
+    {% endblock %}
+</body>
+</html>
+

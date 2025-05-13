@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}Service Dashboard - TowNow{% endblock %}
+
+{% block header_title %}Provider Service Dashboard{% endblock %}
+{% block header_subtitle %}Manage your active tow requests and update your availability.{% endblock %}
+
+{% block content %}
+<section id="provider-service-dashboard" class="mb-2">
+
+    <div class="card mb-2" id="availability-update">
+        <h3 class="text-center">Update Your Availability</h3>
+        <form action="#" method="POST" class="text-center"> {# Placeholder action - Link to backend route for status update #}
+            <div class="form-group" style="max-width: 400px; margin: 0 auto 1rem auto;">
+                <label for="availability_status" class="sr-only">My current status:</label> {# sr-only for accessibility if label is visually hidden #}
+                <select id="availability_status" name="availability_status" class="form-control">
+                    <option value="available">Available for New Requests</option>
+                    <option value="unavailable">Unavailable / Off Duty</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary">Update Status</button>
+        </form>
+    </div>
+
+    <h2 class="text-center mb-2">Active Service Requests</h2>
+    <div class="service-request-list">
+        {% if active_requests and active_requests|length > 0 %}
+            {% for request in active_requests %}
+            <div class="card request-card-item mb-1">
+                <h4>Request ID: #{{ request.id }}</h4>
+                <p><i data-lucide="user" class="icon"></i><strong>Customer:</strong> {{ request.user.fullname }}</p>
+                <p><i data-lucide="map-pin" class="icon"></i><strong>Pickup:</strong> {{ request.current_location }}</p>
+                <p><i data-lucide="route" class="icon"></i><strong>Destination:</strong> {{ request.destination }}</p>
+                <p><i data-lucide="car" class="icon"></i><strong>Vehicle:</strong> {{ request.vehicle_type }}{% if request.vehicle_other %} ({{ request.vehicle_other }}){% endif %}{% if request.vehicle_details %} - {{request.vehicle_details}}{% endif %}</p>
+                <p><i data-lucide="info" class="icon"></i><strong>Status:</strong> 
+                    <span class="status-badge status-{{ request.status|lower|replace(" ", "-") }}">{{ request.status }}</span>
+                </p>
+                <div class="actions mt-1 text-center">
+                    {# Actions will depend on the actual status and backend logic #}
+                    {% if request.status == "Assigned" %}
+                        <a href="#" class="btn btn-success btn-sm">Accept Request</a> {# Placeholder #}
+                        <a href="#" class="btn btn-danger btn-sm">Decline Request</a> {# Placeholder #}
+                    {% elif request.status == "Accepted" %} 
+                        <a href="#" class="btn btn-warning btn-sm">Mark En Route</a> {# Placeholder #}
+                    {% elif request.status == "En Route" %}
+                        <a href="#" class="btn btn-info btn-sm">Mark Arrived at Pickup</a> {# Placeholder #}
+                    {% elif request.status == "Arrived at Pickup" %}
+                        <a href="#" class="btn btn-primary btn-sm">Mark Towing Started</a> {# Placeholder #}
+                    {% elif request.status == "Towing Started" %}
+                        <a href="#" class="btn btn-success btn-sm">Mark Completed</a> {# Placeholder #}
+                    {% endif %}
+                    <a href="#" class="btn btn-outline-secondary btn-sm">View Full Details</a> {# Placeholder #}
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="card text-center">
+                <i data-lucide="inbox" class="icon" style="font-size: 3rem; color: #6c757d; margin-bottom: 1rem;"></i>
+                <p>You have no active service requests at this time. Ensure your status is set to "Available" to receive new requests.</p>
+            </div>
+        {% endif %}
+    </div>
+</section>
+
+<style>
+.request-card-item {
+    border-left: 5px solid #007bff; /* Accent border */
+}
+.request-card-item p {
+    margin-bottom: 0.5rem;
+    font-size: 0.95rem;
+}
+.request-card-item .icon {
+    margin-right: 8px;
+    color: #00529b;
+}
+.status-badge {
+    padding: 0.25em 0.6em;
+    font-size: 0.85em;
+    font-weight: bold;
+    border-radius: 0.25rem;
+    color: #fff;
+}
+.status-assigned { background-color: #17a2b8; } /* Info Blue */
+.status-accepted { background-color: #007bff; } /* Primary Blue */
+.status-en-route { background-color: #ffc107; color: #212529;} /* Warning Yellow */
+.status-arrived-at-pickup { background-color: #fd7e14; } /* Orange */
+.status-towing-started { background-color: #6610f2; } /* Indigo */
+.status-completed { background-color: #28a745; } /* Success Green */
+.status-cancelled { background-color: #dc3545; } /* Danger Red */
+.status-declined { background-color: #6c757d; } /* Secondary Grey */
+
+.actions .btn {
+    margin: 0.25rem;
+}
+</style>
+
+{% endblock %}
+

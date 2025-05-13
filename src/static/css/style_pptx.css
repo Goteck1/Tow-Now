@@ -1,0 +1,400 @@
+/* static/css/style_pptx.css */
+
+/* Global Resets & Base Styles */
+body {
+    font-family: 'Arial', sans-serif; /* Simple, widely available font */
+    margin: 0;
+    background-color: #f0f2f5; /* Light grey background */
+    color: #333333; /* Dark grey for text */
+    line-height: 1.5;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+.container {
+    width: 95%;
+    max-width: 960px; /* Max width for content */
+    margin: 0 auto;
+    padding: 0 10px;
+}
+
+/* Header & Navigation */
+nav {
+    background-color: #007bff; /* Primary Blue */
+    padding: 0.8rem 0;
+    color: #ffffff;
+}
+
+nav .container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+nav a.logo-link {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    color: #ffffff;
+    font-weight: bold;
+    font-size: 1.8rem;
+}
+
+nav img.logo-img {
+    height: 35px;
+    margin-right: 10px;
+    filter: brightness(0) invert(1); /* Make logo white if it's dark */
+}
+
+nav .nav-links {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+}
+
+nav .nav-links li {
+    margin-left: 15px;
+}
+
+nav .nav-links a {
+    text-decoration: none;
+    color: #ffffff;
+    font-weight: 500;
+    padding: 0.5rem 0.8rem;
+    border-radius: 4px;
+    transition: background-color 0.3s ease;
+}
+
+nav .nav-links a:hover,
+nav .nav-links a.active {
+    background-color: #0056b3; /* Darker blue for hover/active */
+}
+
+/* Mobile Navigation (Placeholder for potential JS toggle) */
+.mobile-nav-toggle {
+    display: none; /* Hidden on desktop by default */
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #ffffff;
+    font-size: 1.5rem;
+}
+
+/* Header Section (Page Title Area) */
+header.page-header {
+    background-color: #ffffff; /* White background for page titles */
+    color: #333333;
+    padding: 1.5rem 0;
+    text-align: center;
+    border-bottom: 1px solid #dddddd;
+}
+
+header.page-header h1 {
+    font-size: 2rem;
+    margin: 0;
+    color: #007bff;
+}
+
+header.page-header p.subtitle {
+    font-size: 1rem;
+    color: #555555;
+    margin-top: 0.25rem;
+}
+
+/* Main Content Area */
+main {
+    flex-grow: 1;
+    padding-top: 1.5rem;
+    padding-bottom: 1.5rem;
+}
+
+/* Buttons */
+.btn {
+    display: inline-block;
+    background-color: #007bff; /* Primary Blue */
+    color: #ffffff;
+    padding: 0.7rem 1.5rem;
+    text-decoration: none;
+    border-radius: 5px;
+    font-weight: bold;
+    font-size: 1rem;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    text-align: center;
+}
+
+.btn:hover {
+    background-color: #0056b3; /* Darker blue on hover */
+}
+
+.btn-secondary {
+    background-color: #6c757d; /* Grey for secondary actions */
+}
+
+.btn-secondary:hover {
+    background-color: #545b62;
+}
+
+.btn-full-width {
+    display: block;
+    width: 100%;
+}
+
+/* Forms */
+form label {
+    display: block;
+    margin-bottom: 0.4rem;
+    font-weight: bold;
+    color: #444444;
+}
+
+form input[type="text"],
+form input[type="email"],
+form input[type="password"],
+form input[type="tel"],
+form select,
+form textarea {
+    width: 100%;
+    padding: 0.7rem;
+    margin-bottom: 1rem;
+    border: 1px solid #cccccc;
+    border-radius: 5px;
+    box-sizing: border-box;
+    font-size: 1rem;
+}
+
+form input[type="text"]:focus,
+form input[type="email"]:focus,
+form input[type="password"]:focus,
+form input[type="tel"]:focus,
+form select:focus,
+form textarea:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.15rem rgba(0,123,255,.25);
+    outline: none;
+}
+
+form textarea {
+    min-height: 90px;
+    resize: vertical;
+}
+
+/* Cards (for distinct sections) */
+.card {
+    background-color: #ffffff;
+    border-radius: 6px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+    padding: 1.2rem;
+    margin-bottom: 1.5rem;
+}
+
+.card h2, .card h3, .card h4 {
+    margin-top: 0;
+    color: #007bff;
+}
+
+/* Alerts / Flash Messages */
+.alert {
+    padding: 0.8rem;
+    margin-bottom: 1rem;
+    border: 1px solid transparent;
+    border-radius: 5px;
+    color: #ffffff;
+    text-align: center;
+}
+
+.alert-success { background-color: #28a745; }
+.alert-danger { background-color: #dc3545; }
+.alert-warning { background-color: #ffc107; color: #333;}
+.alert-info { background-color: #17a2b8; }
+
+/* Footer */
+footer {
+    background-color: #343a40; /* Dark grey footer */
+    color: #f8f9fa; /* Light text for footer */
+    text-align: center;
+    padding: 1.2rem 0;
+    margin-top: auto; /* Pushes footer to bottom */
+}
+
+footer p {
+    margin: 0.2rem 0;
+    font-size: 0.85rem;
+}
+
+footer a {
+    color: #f8f9fa;
+    text-decoration: underline;
+}
+
+footer a:hover {
+    text-decoration: none;
+}
+
+/* Utility Classes */
+.mt-1 { margin-top: 1rem !important; }
+.mt-2 { margin-top: 2rem !important; }
+.mb-1 { margin-bottom: 1rem !important; }
+.mb-2 { margin-bottom: 2rem !important; }
+.text-center { text-align: center !important; }
+.icon {
+    vertical-align: middle;
+    margin-right: 0.4em;
+    width: 18px; /* Default icon size */
+    height: 18px;
+}
+
+/* Specific sections for TowNow (can be expanded based on PPTX) */
+/* Example: Homepage Hero/Explanation */
+.home-hero {
+    background-color: #007bff;
+    color: #ffffff;
+    padding: 2.5rem 0;
+    text-align: center;
+}
+
+.home-hero h1 {
+    font-size: 2.2rem;
+    margin-bottom: 0.5rem;
+}
+
+.home-hero p {
+    font-size: 1.1rem;
+    opacity: 0.9;
+    margin-bottom: 1.5rem;
+}
+
+/* Service Request Steps */
+.service-steps-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+    justify-content: center;
+}
+
+.service-step-card {
+    flex: 1 1 280px; /* Responsive flex items */
+    background-color: #ffffff;
+    padding: 1.5rem;
+    border-radius: 6px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+    text-align: center;
+    border: 1px solid #e0e0e0;
+}
+
+.service-step-card .icon {
+    font-size: 2.2rem; /* Larger icons for steps */
+    color: #007bff;
+    margin-bottom: 1rem;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.service-step-card h3 {
+    color: #007bff;
+    margin-bottom: 0.5rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    nav .container {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    nav .nav-links {
+        margin-top: 1rem;
+        flex-direction: column;
+        align-items: flex-start;
+        width: 100%;
+    }
+    nav .nav-links li {
+        margin-left: 0;
+        margin-bottom: 0.5rem;
+        width: 100%;
+    }
+    nav .nav-links a {
+        display: block;
+        padding: 0.8rem;
+        text-align: left;
+    }
+    .mobile-nav-toggle {
+        display: block; /* Show toggle on mobile */
+        position: absolute;
+        top: 0.8rem;
+        right: 1rem;
+    }
+    nav .nav-links.active {
+        display: flex; /* Show links when active */
+    }
+    nav .nav-links:not(.active) {
+        display: none; /* Hide links by default on mobile if toggle is used */
+    }
+
+    .home-hero h1 {
+        font-size: 1.8rem;
+    }
+    .home-hero p {
+        font-size: 1rem;
+    }
+    header.page-header h1 {
+        font-size: 1.6rem;
+    }
+}
+
+/* Guest Checkout option */
+.guest-checkout-option {
+    text-align: center;
+    margin: 1rem 0;
+    font-size: 0.9rem;
+}
+
+.guest-checkout-option a {
+    color: #007bff;
+    text-decoration: underline;
+}
+
+/* Service Request Flow Steps */
+.request-step {
+    padding: 1.5rem;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    background-color: #fff;
+}
+.request-step h3 {
+    color: #00529b;
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+.request-step .step-number {
+    display: inline-block;
+    background-color: #007bff;
+    color: white;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    line-height: 28px;
+    text-align: center;
+    margin-right: 8px;
+    font-weight: bold;
+    font-size: 0.9rem;
+}
+.step-navigation {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 1.5rem;
+}
+.step-navigation .btn-full-width {
+    flex-grow: 1;
+}
+.guest-info-step {
+    background-color: #e6f2ff; /* Lighter blue highlight for guest info */
+    border-color: #b3d7ff;
+}
+
+

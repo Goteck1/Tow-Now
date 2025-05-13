@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block admin_title %}TowNow Admin{% endblock %}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Arial:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for("static", filename="css/style_pptx.css") }}">
+    <style>
+        body {
+            display: flex;
+            min-height: 100vh;
+            background-color: #e9ecef; /* Lighter grey for admin area */
+        }
+        .admin-sidebar {
+            width: 260px;
+            background-color: #343a40; /* Dark sidebar */
+            color: #f8f9fa;
+            padding: 1.5rem 1rem;
+            display: flex;
+            flex-direction: column;
+        }
+        .admin-sidebar .logo-admin {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #ffffff;
+            text-align: center;
+            margin-bottom: 2rem;
+            text-decoration: none;
+        }
+        .admin-sidebar .logo-admin img {
+            height: 30px;
+            margin-right: 8px;
+            filter: brightness(0) invert(1);
+        }
+        .admin-nav-links {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            flex-grow: 1;
+        }
+        .admin-nav-links li a {
+            display: flex;
+            align-items: center;
+            padding: 0.8rem 1rem;
+            color: #adb5bd;
+            text-decoration: none;
+            border-radius: 4px;
+            margin-bottom: 0.5rem;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+        .admin-nav-links li a .icon {
+            margin-right: 10px;
+            width: 20px;
+            height: 20px;
+        }
+        .admin-nav-links li a:hover,
+        .admin-nav-links li a.active {
+            background-color: #495057;
+            color: #ffffff;
+        }
+        .admin-main-content {
+            flex-grow: 1;
+            padding: 1.5rem 2rem;
+            overflow-y: auto;
+        }
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #ced4da;
+        }
+        .admin-header h1 {
+            font-size: 1.8rem;
+            color: #343a40;
+            margin: 0;
+        }
+        .admin-user-info a {
+            color: #007bff;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .admin-user-info a:hover {
+            text-decoration: underline;
+        }
+        .admin-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+            background-color: #fff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .admin-table th, .admin-table td {
+            border: 1px solid #dee2e6;
+            padding: 0.75rem;
+            text-align: left;
+            font-size: 0.9rem;
+        }
+        .admin-table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+            color: #495057;
+        }
+        .admin-table tr:nth-child(even) {background-color: #f8f9fa;}
+        .admin-table .actions a {
+            margin-right: 0.5rem;
+            color: #007bff;
+            text-decoration: none;
+        }
+        .admin-table .actions a:hover {text-decoration: underline;}
+        .admin-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .admin-stat-card {
+            background-color: #fff;
+            padding: 1.5rem;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+            text-align: center;
+        }
+        .admin-stat-card .icon {
+            font-size: 2rem;
+            color: #007bff;
+            margin-bottom: 0.5rem;
+        }
+        .admin-stat-card h3 {
+            font-size: 2.2rem;
+            margin: 0 0 0.3rem 0;
+            color: #343a40;
+        }
+        .admin-stat-card p {
+            font-size: 0.95rem;
+            color: #6c757d;
+            margin: 0;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/lucide/dist/umd/lucide.min.js"></script>
+</head>
+<body>
+    <aside class="admin-sidebar">
+        <a href="{{ url_for("admin_bp.dashboard") }}" class="logo-admin">
+            <img src="{{ url_for("static", filename="images/townow_logo_placeholder.png") }}" alt="TowNow Logo">
+            TowNow Admin
+        </a>
+        <ul class="admin-nav-links">
+            <li><a href="{{ url_for("admin_bp.dashboard") }}" class="{% if request.endpoint == "admin_bp.dashboard" %}active{% endif %}"><i data-lucide="layout-dashboard" class="icon"></i> Dashboard</a></li>
+            <li><a href="{{ url_for("admin_bp.manage_users") }}" class="{% if request.endpoint == "admin_bp.manage_users" %}active{% endif %}"><i data-lucide="users" class="icon"></i> Manage Users</a></li>
+            <li><a href="{{ url_for("admin_bp.manage_requests") }}" class="{% if request.endpoint == "admin_bp.manage_requests" %}active{% endif %}"><i data-lucide="clipboard-list" class="icon"></i> Manage Requests</a></li>
+            <!-- Add more admin links as needed -->
+            <li style="margin-top: auto;"><a href="{{ url_for("main.home") }}"><i data-lucide="arrow-left-circle" class="icon"></i> Back to Main Site</a></li>
+            <li><a href="{{ url_for("main.logout") }}"><i data-lucide="log-out" class="icon"></i> Logout</a></li>
+        </ul>
+    </aside>
+
+    <main class="admin-main-content">
+        <div class="admin-header">
+            <h1>{% block admin_page_title %}Admin Dashboard{% endblock %}</h1>
+            <div class="admin-user-info">
+                {% if current_user and current_user.is_authenticated %}
+                    Logged in as: <strong>{{ current_user.fullname }}</strong> (Admin) | <a href="{{ url_for("main.logout") }}">Logout</a>
+                {% endif %}
+            </div>
+        </div>
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}" style="color: #333; background-color: {% if category == "danger" %}#f8d7da{% elif category == "success" %}#d4edda{% else %}#cce5ff{% endif %}; border-color: {% if category == "danger" %}#f5c6cb{% elif category == "success" %}#c3e6cb{% else %}#b8daff{% endif %};">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% block admin_content %}
+        <!-- Admin page specific content will go here -->
+        {% endblock %}
+    </main>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>
+

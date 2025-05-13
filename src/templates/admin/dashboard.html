@@ -1,0 +1,76 @@
+{% extends "admin/admin_base.html" %}
+
+{% block admin_title %}Admin Dashboard - TowNow{% endblock %}
+
+{% block admin_page_title %}Dashboard Overview{% endblock %}
+
+{% block admin_content %}
+<section id="admin-dashboard-stats">
+    <div class="admin-stats-grid">
+        <div class="admin-stat-card">
+            <i data-lucide="users" class="icon"></i>
+            <h3>{{ user_count if user_count is defined else 0 }}</h3>
+            <p>Total Registered Users</p>
+            <a href="{{ url_for("admin_bp.manage_users") }}" class="btn btn-sm btn-outline-primary mt-1">Manage Users</a>
+        </div>
+        <div class="admin-stat-card">
+            <i data-lucide="clipboard-list" class="icon"></i>
+            <h3>{{ request_count if request_count is defined else 0 }}</h3>
+            <p>Total Service Requests</p>
+            <a href="{{ url_for("admin_bp.manage_requests") }}" class="btn btn-sm btn-outline-primary mt-1">Manage Requests</a>
+        </div>
+        <div class="admin-stat-card">
+            <i data-lucide="truck" class="icon"></i>
+            <h3>N/A</h3>
+            <p>Active Tow Trucks (Placeholder)</p>
+            <a href="#" class="btn btn-sm btn-outline-secondary mt-1">Manage Trucks</a>
+        </div>
+        <div class="admin-stat-card">
+            <i data-lucide="activity" class="icon"></i>
+            <h3>N/A</h3>
+            <p>System Health (Placeholder)</p>
+            <a href="#" class="btn btn-sm btn-outline-secondary mt-1">View Logs</a>
+        </div>
+    </div>
+</section>
+
+<section id="recent-activity" class="mt-2">
+    <div class="card">
+        <h4><i data-lucide="history" class="icon"></i> Recent Activity (Placeholder)</h4>
+        <p>This section will show recent important events like new user registrations, high-priority service requests, or system alerts.</p>
+        <ul>
+            <li>New user registered: test@example.com (Customer)</li>
+            <li>Service Request #1023 initiated by guest.</li>
+            <li>Provider "TowPro Dublin" updated availability.</li>
+        </ul>
+    </div>
+</section>
+
+<style>
+.btn-sm {
+    padding: 0.3rem 0.8rem;
+    font-size: 0.85rem;
+}
+.btn-outline-primary {
+    color: #007bff;
+    border-color: #007bff;
+    background-color: transparent;
+}
+.btn-outline-primary:hover {
+    color: #fff;
+    background-color: #007bff;
+    border-color: #007bff;
+}
+.btn-outline-secondary {
+    color: #6c757d;
+    border-color: #6c757d;
+    background-color: transparent;
+}
+.btn-outline-secondary:hover {
+    color: #fff;
+    background-color: #6c757d;
+    border-color: #6c757d;
+}
+</style>
+{% endblock %}
+

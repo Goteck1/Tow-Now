@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}TowNow - Fast & Reliable Towing in Dublin{% endblock %}
+
+{% block hero_title %}TowNow: Your Reliable Towing Partner{% endblock %}
+{% block hero_subtitle %}Fast, Safe, and Professional Towing Services Across Dublin. Available 24/7.{% endblock %}
+
+{% block hero_cta %}
+<a href="{{ url_for("main.service_request") }}" class="btn" style="background-color: #ffffff; color: #007bff; padding: 0.8rem 2rem; font-size: 1.1rem;">Request a Tow Now</a>
+<div class="guest-checkout-option mt-1">
+    <p style="color: #f0f2f5; font-size: 0.9rem;">Or <a href="{{ url_for("main.service_request", guest=True) }}" style="color: #ffffff; text-decoration: underline;">continue as a guest</a> for immediate assistance.</p>
+</div>
+{% endblock %}
+
+{% block content %}
+<section id="service-explanation" class="text-center mb-2 card">
+    <h2>How TowNow Works - Simple & Efficient</h2>
+    <p class="lead mb-2" style="font-size: 1.1rem; color: #555;">Getting roadside assistance is straightforward with TowNow. Follow these three easy steps:</p>
+    <div class="service-steps-container">
+        <div class="service-step-card">
+            <i data-lucide="map-pin" class="icon"></i>
+            <h3>1. Share Location</h3>
+            <p>Enter your current location and where your vehicle needs to be towed. Use GPS or type the address.</p>
+        </div>
+        <div class="service-step-card">
+            <i data-lucide="car" class="icon"></i>
+            <h3>2. Select Vehicle</h3>
+            <p>Choose your vehicle type (car, SUV, motorcycle, etc.) so we dispatch the correct tow truck.</p>
+        </div>
+        <div class="service-step-card">
+            <i data-lucide="credit-card" class="icon"></i>
+            <h3>3. Confirm & Pay</h3>
+            <p>Review the transparent price estimate and complete your payment securely online. Help is on its way!</p>
+        </div>
+    </div>
+</section>
+
+<section id="why-choose-us" class="mb-2 card">
+    <h2 class="text-center">Why Choose TowNow Dublin?</h2>
+    <ul class="features-list-pptx" style="list-style: none; padding: 0; margin-top: 1rem;">
+        <li style="margin-bottom: 0.5rem; display: flex; align-items: center;"><i data-lucide="zap" class="icon" style="color: #007bff;"></i><strong>Fast & Efficient:</strong> Quick response times across all of Dublin.</li>
+        <li style="margin-bottom: 0.5rem; display: flex; align-items: center;"><i data-lucide="shield-check" class="icon" style="color: #007bff;"></i><strong>Reliable & Professional:</strong> Verified and experienced tow truck operators.</li>
+        <li style="margin-bottom: 0.5rem; display: flex; align-items: center;"><i data-lucide="dollar-sign" class="icon" style="color: #007bff;"></i><strong>Transparent Pricing:</strong> No hidden fees. Clear cost estimates provided upfront.</li>
+        <li style="margin-bottom: 0.5rem; display: flex; align-items: center;"><i data-lucide="lock" class="icon" style="color: #007bff;"></i><strong>Secure Online Payment:</strong> Easy and safe transactions via our platform.</li>
+        <li style="margin-bottom: 0.5rem; display: flex; align-items: center;"><i data-lucide="smartphone" class="icon" style="color: #007bff;"></i><strong>Mobile First:</strong> Request assistance easily from any mobile device.</li>
+        <li style="margin-bottom: 0.5rem; display: flex; align-items: center;"><i data-lucide="clock" class="icon" style="color: #007bff;"></i><strong>24/7 Availability:</strong> We are here to help you day and night, all year round.</li>
+    </ul>
+</section>
+
+<section id="cta-final" class="text-center card" style="background-color: #0056b3; color: #fff;">
+    <h2>Stranded? Don't Wait!</h2>
+    <p>Let TowNow take the stress out of your breakdown. Get professional help now.</p>
+    <a href="{{ url_for("main.service_request") }}" class="btn" style="background-color: #ffffff; color: #007bff; margin-top: 1rem;">Request Tow Service</a>
+</section>
+
+{% endblock %}
+

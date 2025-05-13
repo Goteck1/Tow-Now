@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block title %}Contact Us - TowNow{% endblock %}
+
+{% block header_title %}Get in Touch{% endblock %}
+{% block header_subtitle %}Have questions or need support? We are here to help you.{% endblock %}
+
+{% block content %}
+<section id="contact-section" class="mb-2">
+    <div class="contact-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem;">
+        <div class="card contact-form-card">
+            <h3><i data-lucide="mail" class="icon"></i> Send Us a Message</h3>
+            <form action="{{ url_for("main.contact") }}" method="POST">
+                <div class="form-group">
+                    <label for="name">Full Name:</label>
+                    <input type="text" id="name" name="name" placeholder="Your Full Name" required>
+                </div>
+                <div class="form-group">
+                    <label for="email">Email Address:</label>
+                    <input type="email" id="email" name="email" placeholder="you@example.com" required>
+                </div>
+                <div class="form-group">
+                    <label for="subject">Subject:</label>
+                    <input type="text" id="subject" name="subject" placeholder="Reason for your message" required>
+                </div>
+                <div class="form-group">
+                    <label for="message">Message:</label>
+                    <textarea id="message" name="message" rows="5" placeholder="Write your message here..." required></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary btn-full-width">Send Message</button>
+            </form>
+        </div>
+
+        <div class="card contact-info-card">
+            <h3><i data-lucide="info" class="icon"></i> Contact Information</h3>
+            <p><i data-lucide="map-pin" class="icon"></i> <strong>Address:</strong> TowNow HQ, 123 Digital Road, Dublin, Ireland</p>
+            <p><i data-lucide="phone" class="icon"></i> <strong>Phone Support:</strong> +353 (1) 555-TOWN (0869)</p>
+            <p><i data-lucide="mail-open" class="icon"></i> <strong>Email:</strong> support@townow.example.ie</p>
+            
+            <h4 class="mt-2">Business Hours</h4>
+            <p><i data-lucide="clock" class="icon"></i> <strong>Customer Support:</strong> Monday - Friday, 9:00 AM - 6:00 PM (GMT)</p>
+            <p><i data-lucide="truck" class="icon"></i> <strong>Towing Service:</strong> Available 24 hours a day, 7 days a week.</p>
+
+            <h4 class="mt-2">Follow Us (Placeholder)</h4>
+            <div class="social-links">
+                <a href="#" aria-label="Facebook"><i data-lucide="facebook"></i></a>
+                <a href="#" aria-label="Twitter"><i data-lucide="twitter"></i></a>
+                <a href="#" aria-label="Instagram"><i data-lucide="instagram"></i></a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<style>
+.contact-form-card h3, .contact-info-card h3 {
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+.contact-info-card p {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.8rem;
+    font-size: 1rem;
+}
+.contact-info-card .icon {
+    margin-right: 10px;
+    color: #007bff;
+}
+.social-links {
+    text-align: center;
+    margin-top: 1rem;
+}
+.social-links a {
+    margin: 0 0.5rem;
+    color: #00529b;
+    font-size: 1.5rem;
+}
+.social-links a:hover {
+    color: #007bff;
+}
+</style>
+
+{% endblock %}
+

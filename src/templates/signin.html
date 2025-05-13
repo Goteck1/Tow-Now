@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}Sign In - TowNow{% endblock %}
+
+{% block header_title %}Welcome Back to TowNow{% endblock %}
+{% block header_subtitle %}Sign in to access your account and manage your towing needs.{% endblock %}
+
+{% block content %}
+<section id="signin-form-section" class="card" style="max-width: 550px; margin: 2rem auto;">
+    <h2 class="text-center" style="color: #007bff; margin-bottom: 1.5rem;">Sign In</h2>
+    <form action="{{ url_for("main.signin") }}" method="POST">
+        <div class="form-group">
+            <label for="email">Email Address:</label>
+            <input type="email" id="email" name="email" placeholder="you@example.com" required>
+        </div>
+
+        <div class="form-group">
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" placeholder="Enter your password" required>
+        </div>
+        
+        <button type="submit" class="btn btn-primary btn-full-width mt-1">Sign In</button>
+    </form>
+    <p class="text-center mt-1" style="font-size: 0.9rem;">Don't have an account? <a href="{{ url_for("main.signup") }}" style="color: #007bff; text-decoration: underline;">Sign Up Here</a></p>
+    <div class="guest-checkout-option mt-1">
+        <p>Or <a href="{{ url_for("main.service_request", guest=True) }}" style="color: #007bff; text-decoration: underline;">continue as a guest</a> to request a tow.</p>
+    </div>
+</section>
+{% endblock %}
+
