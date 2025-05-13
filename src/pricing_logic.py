@@ -220,7 +220,7 @@ if __name__ == "__main__":
     print(f"MAPBOX_ACCESS_TOKEN: {MAPBOX_ACCESS_TOKEN[:10]}...") # Check if token is loaded
 
     price_details_1 = calculate_dynamic_price(origin, destination, "sedan")
-    print(f"Test Case 1 (City Centre to Airport, Sedan, Auto Time): Price: €{price_details_1.get("price")} Error: {price_details_1.get("error")}")
+    print(f"Test Case 1 (City Centre to Airport, Sedan, Auto Time): Price: €{price_details_1.get('price')} Error: {price_details_1.get('error')}")
     if price_details_1.get("breakdown"):
         print("Breakdown 1:", price_details_1["breakdown"])
 
