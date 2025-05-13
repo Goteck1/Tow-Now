@@ -8,7 +8,9 @@ from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import LoginManager, UserMixin, login_user, logout_user, current_user, login_required
 import datetime # Added for pricing logic timestamp
-from .pricing_logic import calculate_dynamic_price # Import the new pricing logic function
+
+# Import the new pricing logic function
+from pricing_logic import calculate_dynamic_price
 
 app = Flask(__name__,
             static_folder=os.path.join(os.path.dirname(__file__), 'static'),
