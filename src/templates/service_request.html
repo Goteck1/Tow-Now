@@ -53,15 +53,21 @@
             <div class="form-group">
                 <label for="current_location_geocoder_container"><i data-lucide="map-pin" class="icon"></i> Current Location:</label>
                 <div id="current_location_geocoder_container"></div>
-                <input type="hidden" id="current_location" name="current_location" required>
-                 <input type="hidden" id="current_location_zone" name="current_location_zone">
+                <!-- Hidden fields for full address and coordinates -->
+                <input type="hidden" id="current_location_address" name="current_location_address" required>
+                <input type="hidden" id="current_location_lng" name="current_location_lng" required>
+                <input type="hidden" id="current_location_lat" name="current_location_lat" required>
+                <input type="hidden" id="current_location_zone" name="current_location_zone"> <!-- Kept for info -->
                 <button type="button" id="use_gps_location" class="btn btn-secondary btn-sm mt-1" style="width: auto; font-size: 0.85rem; padding: 0.4rem 0.8rem;">Use My GPS Location</button>
             </div>
             <div class="form-group">
                 <label for="destination_geocoder_container"><i data-lucide="route" class="icon"></i> Destination Address:</label>
                 <div id="destination_geocoder_container"></div>
-                <input type="hidden" id="destination" name="destination" required>
-                <input type="hidden" id="destination_zone" name="destination_zone">
+                <!-- Hidden fields for full address and coordinates -->
+                <input type="hidden" id="destination_address" name="destination_address" required>
+                <input type="hidden" id="destination_lng" name="destination_lng" required>
+                <input type="hidden" id="destination_lat" name="destination_lat" required>
+                <input type="hidden" id="destination_zone" name="destination_zone"> <!-- Kept for info -->
             </div>
             <div class="step-navigation">
                 <button type="button" onclick="nextStep(2)" class="btn btn-primary btn-full-width">Next: Vehicle Details</button>
@@ -125,7 +131,7 @@
 
 {% block scripts %}
 <script>
-    const MAPBOX_ACCESS_TOKEN = "pk.eyJ1Ijoiam9hcXVpbmFsZSIsImEiOiJjbWFtbXh0OXkwbHdzMmtzZGpudXFreTdkIn0.o8lo9--pdwMvJrnz_rKuKg"; // Replace with your Mapbox Access Token
+    const MAPBOX_ACCESS_TOKEN = "pk.eyJ1Ijoiam9hcXVpbmFsZSIsImEiOiJjbWFtbXh0OXkwbHdzMmtzZGpudXFreTdkIn0.o8lo9--pdwMvJrnz_rKuKg"; 
     mapboxgl.accessToken = MAPBOX_ACCESS_TOKEN;
 
     const steps = document.querySelectorAll(".request-step");
@@ -136,8 +142,8 @@
         accessToken: mapboxgl.accessToken,
         mapboxgl: mapboxgl,
         placeholder: "E.g., 123 Main St, Dublin",
-        countries: 'IE', // Restrict to Ireland
-        bbox: [-10.83, 51.39, -5.34, 55.43] // Bounding box for Ireland
+        countries: 'IE',
+        bbox: [-10.83, 51.39, -5.34, 55.43]
     });
     currentLocationGeocoder.addTo('#current_location_geocoder_container');
 
@@ -150,29 +156,25 @@
     });
     destinationGeocoder.addTo('#destination_geocoder_container');
 
-    // Store geocoder results in hidden fields and extract zone
+    // Function to extract Dublin Postal District (kept for informational purposes)
     function getDublinPostalDistrict(place) {
         if (place && place.context) {
             for (let i = 0; i < place.context.length; i++) {
                 const component = place.context[i];
-                // Check for postcode (e.g., D01, D1, D24) or locality (e.g., Lucan, Swords)
                 if (component.id.startsWith('postcode.') && component.text.match(/^D\d{1,2}W?$/i)) {
                     return component.text.toUpperCase();
                 }
                 if (component.id.startsWith('locality.')) {
-                     // Add more specific localities if needed from your zone list
                     const knownLocalities = ["Lucan", "Swords", "Malahide", "Blanchardstown", "Baldoyle", "Portmarnock", "Skerries", "Howth", "Clondalkin", "Tallaght", "Rathfarnham", "Balbriggan", "Bray", "Maynooth"];
                     if (knownLocalities.includes(component.text)) {
                         return component.text;
                     }
                 }
-                 // Fallback for district from address string if available
                 if (component.id.startsWith('district.') && component.text.match(/^Dublin \d{1,2}W?$/i)) {
                     return component.text.replace("Dublin ", "D").toUpperCase();
                 }
             }
         }
-        // Fallback if no specific zone found, try to get a general area or return 'Outside'
         if (place && place.place_name) {
             const knownAreas = ["Lucan", "Swords", "Malahide", "Blanchardstown", "Baldoyle", "Portmarnock", "Skerries", "Howth", "Clondalkin", "Tallaght", "Rathfarnham", "Balbriggan", "Bray", "Maynooth"];
             for (const area of knownAreas) {
@@ -183,17 +185,49 @@
                 return "D" + dublinMatch[1].toUpperCase();
             }
         }
-        return 'Outside'; // Default if no specific zone is identified
+        return 'Outside';
     }
 
+    // Event listener for current location geocoder
     currentLocationGeocoder.on('result', (e) => {
-        document.getElementById('current_location').value = e.result.place_name;
-        document.getElementById('current_location_zone').value = getDublinPostalDistrict(e.result);
+        if (e.result && e.result.geometry && e.result.geometry.coordinates) {
+            document.getElementById('current_location_address').value = e.result.place_name;
+            document.getElementById('current_location_lng').value = e.result.geometry.coordinates[0];
+            document.getElementById('current_location_lat').value = e.result.geometry.coordinates[1];
+            document.getElementById('current_location_zone').value = getDublinPostalDistrict(e.result);
+        } else {
+            document.getElementById('current_location_address').value = '';
+            document.getElementById('current_location_lng').value = '';
+            document.getElementById('current_location_lat').value = '';
+            document.getElementById('current_location_zone').value = 'Outside';
+        }
+    });
+    currentLocationGeocoder.on('clear', () => {
+        document.getElementById('current_location_address').value = '';
+        document.getElementById('current_location_lng').value = '';
+        document.getElementById('current_location_lat').value = '';
+        document.getElementById('current_location_zone').value = 'Outside';
     });
 
+    // Event listener for destination geocoder
     destinationGeocoder.on('result', (e) => {
-        document.getElementById('destination').value = e.result.place_name;
-        document.getElementById('destination_zone').value = getDublinPostalDistrict(e.result);
+        if (e.result && e.result.geometry && e.result.geometry.coordinates) {
+            document.getElementById('destination_address').value = e.result.place_name;
+            document.getElementById('destination_lng').value = e.result.geometry.coordinates[0];
+            document.getElementById('destination_lat').value = e.result.geometry.coordinates[1];
+            document.getElementById('destination_zone').value = getDublinPostalDistrict(e.result);
+        } else {
+            document.getElementById('destination_address').value = '';
+            document.getElementById('destination_lng').value = '';
+            document.getElementById('destination_lat').value = '';
+            document.getElementById('destination_zone').value = 'Outside';
+        }
+    });
+    destinationGeocoder.on('clear', () => {
+        document.getElementById('destination_address').value = '';
+        document.getElementById('destination_lng').value = '';
+        document.getElementById('destination_lat').value = '';
+        document.getElementById('destination_zone').value = 'Outside';
     });
 
     function showStep(stepNumber) {
@@ -206,24 +240,41 @@
     }
 
     async function fetchPrice() {
-        const originZone = document.getElementById('current_location_zone').value || 'Outside';
-        const destinationZone = document.getElementById('destination_zone').value || 'Outside';
+        const originLng = document.getElementById('current_location_lng').value;
+        const originLat = document.getElementById('current_location_lat').value;
+        const destLng = document.getElementById('destination_lng').value;
+        const destLat = document.getElementById('destination_lat').value;
         const vehicleType = document.getElementById('vehicle_type').value;
 
-        if (!originZone || !destinationZone || !vehicleType) {
-            document.getElementById("estimated_price").textContent = "Missing info for price.";
+        if (!originLng || !originLat || !destLng || !destLat || !vehicleType) {
+            document.getElementById("estimated_price").textContent = "Missing location or vehicle for price.";
             return;
         }
         document.getElementById("estimated_price").textContent = "Calculating...";
         document.getElementById("price_breakdown_details").style.display = 'none';
 
         try {
-            const response = await fetch(`/calculate_price?origin_zone=${encodeURIComponent(originZone)}&destination_zone=${encodeURIComponent(destinationZone)}&vehicle_type=${encodeURIComponent(vehicleType)}`);
+            const params = new URLSearchParams({
+                origin_lng: originLng,
+                origin_lat: originLat,
+                dest_lng: destLng,
+                dest_lat: destLat,
+                vehicle_type: vehicleType
+            });
+            const response = await fetch(`/calculate_price?${params.toString()}`);
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                const errorData = await response.json().catch(() => ({ error: "HTTP error, no JSON response"}));
+                throw new Error(`HTTP error! status: ${response.status}, message: ${errorData.error || 'Unknown error'}`);
             }
             const data = await response.json();
-            if (data.price) {
+            if (data.error) {
+                 document.getElementById("estimated_price").textContent = `Error: ${data.error}`;
+                 console.error('Error from pricing API:', data.details || data.error);
+                 if(data.breakdown) {
+                    document.getElementById("price_breakdown_content").textContent = JSON.stringify(data.breakdown, null, 2);
+                    document.getElementById("price_breakdown_details").style.display = 'block'; 
+                 }
+            } else if (data.price) {
                 document.getElementById("estimated_price").textContent = `€${data.price.toFixed(2)}`;
                 if (data.breakdown) {
                     document.getElementById("price_breakdown_content").textContent = JSON.stringify(data.breakdown, null, 2);
@@ -234,15 +285,17 @@
             }
         } catch (error) {
             console.error('Error fetching price:', error);
-            document.getElementById("estimated_price").textContent = "Could not fetch price.";
+            document.getElementById("estimated_price").textContent = "Could not fetch price. " + error.message;
         }
     }
 
     function nextStep(step) {
         let valid = true;
         if (currentStep === 1) {
-            if (!document.getElementById("current_location").value || !document.getElementById("destination").value) {
-                alert("Please fill in current location and destination using the search boxes.");
+            if (!document.getElementById("current_location_address").value || !document.getElementById("destination_address").value ||
+                !document.getElementById("current_location_lng").value || !document.getElementById("current_location_lat").value ||
+                !document.getElementById("destination_lng").value || !document.getElementById("destination_lat").value) {
+                alert("Please fill in current location and destination using the search boxes, ensuring coordinates are captured.");
                 valid = false;
             }
         } else if (currentStep === 2) {
@@ -261,15 +314,15 @@
         showStep(step);
 
         if (step === 3) {
-            document.getElementById("summary_current_location").textContent = document.getElementById("current_location").value;
-            document.getElementById("summary_destination").textContent = document.getElementById("destination").value;
+            document.getElementById("summary_current_location").textContent = document.getElementById("current_location_address").value;
+            document.getElementById("summary_destination").textContent = document.getElementById("destination_address").value;
             let vehicleSelect = document.getElementById("vehicle_type");
             let vehicleTypeSummary = vehicleSelect.options[vehicleSelect.selectedIndex].text;
             if (vehicleSelect.value === "other") {
                 vehicleTypeSummary += ": " + document.getElementById("vehicle_other").value;
             }
             document.getElementById("summary_vehicle_type").textContent = vehicleTypeSummary;
-            fetchPrice(); // Fetch dynamic price
+            fetchPrice(); 
         }
     }
 
@@ -294,34 +347,22 @@
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(function(position) {
                 const coords = [position.coords.longitude, position.coords.latitude];
-                // Use Mapbox reverse geocoding to get address and set geocoder
-                fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${coords[0]},${coords[1]}.json?access_token=${MAPBOX_ACCESS_TOKEN}&types=address,postcode,locality,place,district`)
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.features && data.features.length > 0) {
-                            const bestResult = data.features[0];
-                            currentLocationGeocoder.setInput(bestResult.place_name);
-                            document.getElementById('current_location').value = bestResult.place_name;
-                            document.getElementById('current_location_zone').value = getDublinPostalDistrict(bestResult);
-                        } else {
-                            document.getElementById("current_location").value = `Lat: ${position.coords.latitude.toFixed(5)}, Lon: ${position.coords.longitude.toFixed(5)}`;
-                             document.getElementById('current_location_zone').value = 'Outside'; // Default if reverse geocoding fails
-                            alert("Could not find address for GPS location. Using coordinates. Zone set to 'Outside'.");
-                        }
-                    })
-                    .catch(err => {
-                        console.error("Error reverse geocoding: ", err);
-                        alert("Error finding address for GPS. Please enter manually.");
-                    });
-            }, function() {
-                alert("Could not get GPS location. Please enter manually.");
+                // Use Mapbox Geocoder's reverse geocoding capability or a direct API call if preferred
+                currentLocationGeocoder.query(coords.join(',')); 
+                // The 'result' event of the geocoder will handle setting the hidden fields.
+                // Alternatively, directly call Mapbox reverse geocoding API here and set fields.
+                alert("Location approximated. Please verify the address in the search box.");
+            }, function(error) {
+                console.error("Error getting GPS location: ", error);
+                alert("Could not get your location. Please enter it manually.");
             });
         } else {
-            alert("Geolocation is not supported by this browser. Please enter your location manually.");
+            alert("Geolocation is not supported by your browser.");
         }
     });
 
-    showStep(1);
+    // Initial setup
+    showStep(currentStep);
 
 </script>
 {% endblock %}
