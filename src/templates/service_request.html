@@ -144,19 +144,6 @@
         showStep(step);
     }
 
-    document.getElementById("vehicle_type").addEventListener("change", function() {
-        const otherGroup = document.getElementById("vehicle_other_group");
-        const otherInput = document.getElementById("vehicle_other");
-        if (this.value === "other") {
-            otherGroup.style.display = "block";
-            otherInput.required = true;
-        } else {
-            otherGroup.style.display = "none";
-            otherInput.required = false;
-            otherInput.value = "";
-        }
-    });
-
     document.getElementById("use_gps_location").addEventListener("click", function () {
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(async function (position) {
