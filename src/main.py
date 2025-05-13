@@ -7,7 +7,7 @@ from flask import Flask, send_from_directory, render_template, request, redirect
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import LoginManager, UserMixin, login_user, logout_user, current_user, login_required
-import datetime # Added for pricing logic timestamp
+import datetime 
 
 # Import the new pricing logic function
 from pricing_logic import calculate_dynamic_price
@@ -37,8 +37,8 @@ class User(UserMixin, db.Model):
     fullname = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(100), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
-    user_type = db.Column(db.String(20), nullable=False, default='customer') # customer or provider
-    is_admin = db.Column(db.Boolean, default=False) # For admin panel
+    user_type = db.Column(db.String(20), nullable=False, default='customer') 
+    is_admin = db.Column(db.Boolean, default=False) 
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -49,19 +49,19 @@ class User(UserMixin, db.Model):
 class ServiceRequest(db.Model):
     __tablename__ = 'service_requests'
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True) # Nullable for guest requests
-    guest_name = db.Column(db.String(100), nullable=True) # For guest checkout
-    guest_phone = db.Column(db.String(20), nullable=True)  # For guest checkout
-    current_location = db.Column(db.String(255), nullable=False) # Will store full address from Mapbox
-    current_location_zone = db.Column(db.String(50), nullable=True) # Store identified zone for record/debug
-    destination = db.Column(db.String(255), nullable=False) # Will store full address from Mapbox
-    destination_zone = db.Column(db.String(50), nullable=True) # Store identified zone for record/debug
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True) 
+    guest_name = db.Column(db.String(100), nullable=True) 
+    guest_phone = db.Column(db.String(20), nullable=True)  
+    current_location = db.Column(db.String(255), nullable=False) 
+    current_location_zone = db.Column(db.String(50), nullable=True) # Kept for info, pricing uses coords
+    destination = db.Column(db.String(255), nullable=False) 
+    destination_zone = db.Column(db.String(50), nullable=True) # Kept for info, pricing uses coords
     vehicle_type = db.Column(db.String(50), nullable=False)
     vehicle_other = db.Column(db.String(100))
     vehicle_details = db.Column(db.String(255))
-    status = db.Column(db.String(50), default='Pending Payment') # e.g., Pending Payment, Paid, Assigned, En Route, Completed, Cancelled
-    price = db.Column(db.Float) # Will store the dynamically calculated price
-    price_breakdown_json = db.Column(db.Text, nullable=True) # Store price breakdown for debugging/logging
+    status = db.Column(db.String(50), default='Pending Payment') 
+    price = db.Column(db.Float) 
+    price_breakdown_json = db.Column(db.Text, nullable=True) 
     provider_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
@@ -76,7 +76,7 @@ def load_user(user_id):
 # --- Database Initialization Function ---
 def initialize_database():
     with app.app_context():
-        db.create_all() # Ensure tables are created
+        db.create_all() 
         if not User.query.filter_by(email='admin@townow.local').first():
             admin_user = User(fullname='Admin User', email='admin@townow.local', user_type='admin', is_admin=True)
             admin_user.set_password('adminpass')
@@ -96,21 +96,24 @@ def home():
 
 @main_bp.route('/calculate_price', methods=['GET'])
 def get_price_estimate():
-    origin_zone = request.args.get('origin_zone', 'Outside')
-    destination_zone = request.args.get('destination_zone', 'Outside')
-    vehicle_type = request.args.get('vehicle_type')
-
-    if not vehicle_type:
-        return jsonify({"error": "Vehicle type is required"}), 400
-    
-    # Ensure vehicle_type key matches what's in pricing_logic.py (e.g., 'sedan', 'suv')
-    # The form already sends these keys directly.
-
     try:
-        price_details = calculate_dynamic_price(origin_zone, destination_zone, vehicle_type)
+        origin_lng = request.args.get('origin_lng', type=float)
+        origin_lat = request.args.get('origin_lat', type=float)
+        dest_lng = request.args.get('dest_lng', type=float)
+        dest_lat = request.args.get('dest_lat', type=float)
+        vehicle_type = request.args.get('vehicle_type')
+
+        if not all([origin_lng, origin_lat, dest_lng, dest_lat, vehicle_type]):
+            return jsonify({"error": "Missing required parameters: origin_lng, origin_lat, dest_lng, dest_lat, vehicle_type"}), 400
+        
+        origin_coords = (origin_lng, origin_lat)
+        destination_coords = (dest_lng, dest_lat)
+        
+        price_details = calculate_dynamic_price(origin_coords, destination_coords, vehicle_type)
         return jsonify(price_details)
+    except ValueError:
+         return jsonify({"error": "Invalid coordinate format. Longitude and latitude must be numbers."}), 400
     except Exception as e:
-        # Log the error for debugging
         app.logger.error(f"Error calculating price: {e}")
         return jsonify({"error": "Could not calculate price", "details": str(e)}), 500
 
@@ -153,7 +156,7 @@ def signin():
             return redirect(url_for('main.service_provider_home'))
         elif current_user.is_admin:
              return redirect(url_for('admin_bp.dashboard'))
-        else: # customer
+        else: 
             return redirect(url_for('main.user_home'))
             
     if request.method == 'POST':
@@ -232,24 +235,45 @@ def submit_service_request():
             flash('Guest name and phone are required for guest checkout.', 'danger')
             return redirect(url_for('main.service_request', guest="True"))
 
-    current_location_full = request.form.get('current_location') # Full address from Mapbox
-    current_location_zone_form = request.form.get('current_location_zone', 'Outside')
-    destination_full = request.form.get('destination') # Full address from Mapbox
-    destination_zone_form = request.form.get('destination_zone', 'Outside')
+    current_location_full = request.form.get('current_location_address') 
+    destination_full = request.form.get('destination_address') 
     vehicle_type = request.form.get('vehicle_type')
     vehicle_other = request.form.get('vehicle_other') if vehicle_type == 'other' else None
     vehicle_details = request.form.get('vehicle_details')
-
-    if not all([current_location_full, destination_full, vehicle_type]):
-        flash('Please complete all required fields (location, destination, vehicle type).', 'danger')
+    
+    # Get coordinates from hidden fields (populated by JS)
+    try:
+        origin_lng = float(request.form.get('current_location_lng'))
+        origin_lat = float(request.form.get('current_location_lat'))
+        dest_lng = float(request.form.get('destination_lng'))
+        dest_lat = float(request.form.get('destination_lat'))
+    except (TypeError, ValueError):
+        flash('Invalid location coordinates. Please re-select locations.', 'danger')
         redirect_url = url_for('main.service_request', guest="True") if is_guest_checkout else url_for('main.service_request')
         return redirect(redirect_url)
 
-    # Calculate price using the dynamic pricing function
+    # Optional: still get zones if frontend provides them, for informational storage
+    current_location_zone_form = request.form.get('current_location_zone', 'Outside')
+    destination_zone_form = request.form.get('destination_zone', 'Outside')
+
+    if not all([current_location_full, destination_full, vehicle_type, origin_lng, origin_lat, dest_lng, dest_lat]):
+        flash('Please complete all required fields (locations, vehicle type, and ensure coordinates are set).', 'danger')
+        redirect_url = url_for('main.service_request', guest="True") if is_guest_checkout else url_for('main.service_request')
+        return redirect(redirect_url)
+
+    origin_coords = (origin_lng, origin_lat)
+    destination_coords = (dest_lng, dest_lat)
+
     try:
-        price_data = calculate_dynamic_price(current_location_zone_form, destination_zone_form, vehicle_type)
+        price_data = calculate_dynamic_price(origin_coords, destination_coords, vehicle_type)
+        if price_data.get("error"):
+            app.logger.error(f"Error from pricing logic: {price_data.get('error')} - Breakdown: {price_data.get('breakdown')}")
+            flash(f"Error calculating service price: {price_data.get('error')}. Please try again or contact support.", 'danger')
+            redirect_url = url_for('main.service_request', guest="True") if is_guest_checkout else url_for('main.service_request')
+            return redirect(redirect_url)
+        
         estimated_price = price_data['price']
-        price_breakdown_str = jsonify(price_data['breakdown']).get_data(as_text=True) # Store breakdown as JSON string
+        price_breakdown_str = jsonify(price_data['breakdown']).get_data(as_text=True) 
     except Exception as e:
         app.logger.error(f"Error calculating price during submission: {e}")
         flash('Error calculating service price. Please try again or contact support.', 'danger')
@@ -261,21 +285,20 @@ def submit_service_request():
         guest_name=guest_name_form,
         guest_phone=guest_phone_form,
         current_location=current_location_full,
-        current_location_zone=current_location_zone_form,
+        current_location_zone=current_location_zone_form, # Still store if available
         destination=destination_full,
-        destination_zone=destination_zone_form,
+        destination_zone=destination_zone_form, # Still store if available
         vehicle_type=vehicle_type,
         vehicle_other=vehicle_other,
         vehicle_details=vehicle_details,
         price=estimated_price,
         price_breakdown_json=price_breakdown_str,
-        status='Pending Payment' # Initial status
+        status='Pending Payment' 
     )
     db.session.add(new_request)
     db.session.commit()
 
-    # Simulate payment - In a real app, redirect to payment gateway here
-    new_request.status = 'Paid' # Update status after successful (simulated) payment
+    new_request.status = 'Paid' 
     db.session.commit()
 
     if is_guest_checkout:
@@ -291,8 +314,7 @@ def service_provider_dashboard():
     if current_user.user_type != 'provider' or current_user.is_admin:
         flash('Unauthorized access.', 'danger')
         return redirect(url_for('main.home'))
-    # ... (rest of the dashboard logic remains the same)
-    active_requests_data = [] # Replace with actual data query if needed
+    active_requests_data = [] 
     return render_template('service_provider_dashboard.html', active_requests=active_requests_data, provider=current_user)
 
 @main_bp.route('/qa')
@@ -302,7 +324,6 @@ def qa():
 @main_bp.route('/contact', methods=['GET', 'POST'])
 def contact():
     if request.method == 'POST':
-        # ... (contact form logic remains the same)
         flash('Thank you for your message. We will get back to you soon.', 'success')
         return redirect(url_for('main.contact'))
     return render_template('contact.html')
@@ -351,8 +372,5 @@ def page_not_found(e):
     return render_template('404.html'), 404
 
 if __name__ == '__main__':
-    # Ensure the app context is available for db operations if run directly
-    with app.app_context():
-        db.create_all() # This will also call initialize_database if tables don't exist
     app.run(host='0.0.0.0', port=5000, debug=True)
 
