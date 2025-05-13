@@ -38,3 +38,29 @@ def delete_user(user_id):
     db.session.delete(user)
     db.session.commit()
     return '', 204
+
+# ------- RUTA PARA SOLICITUD DE GRÚA -------
+
+@user_bp.route('/submit_service_request', methods=['POST'])
+def submit_service_request():
+    current_location_raw = request.form.get("current_location")
+    destination = request.form.get("destination")
+    vehicle_type = request.form.get("vehicle_type")
+
+    # Si current_location tiene coordenadas GPS, hacer reverse geocoding
+    if current_location_raw and current_location_raw.startswith("Lat:"):
+        try:
+            parts = current_location_raw.replace("Lat:", "").replace("Lon:", "").split(",")
+            lat = float(parts[0].strip())
+            lon = float(parts[1].strip())
+            current_location = reverse_geocode_osm(lat, lon)
+        except Exception as e:
+            print("Error geocoding:", e)
+            current_location = "Unknown"
+    else:
+        current_location = current_location_raw or "Unknown"
+
+    return render_template("confirmation.html",
+                           direccion=current_location,
+                           destino=destination,
+                           vehiculo=vehicle_type)
