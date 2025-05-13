@@ -158,16 +158,41 @@
     });
 
     document.getElementById("use_gps_location").addEventListener("click", function() {
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(function(position) {
-                document.getElementById("current_location").value = `Lat: ${position.coords.latitude.toFixed(5)}, Lon: ${position.coords.longitude.toFixed(5)}`;
-            }, function() {
-                alert("Could not get GPS location. Please enter manually.");
-            });
-        } else {
-            alert("Geolocation is not supported by this browser. Please enter your location manually.");
-        }
-    });
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(async function(position) {
+            const lat = position.coords.latitude.toFixed(5);
+            const lon = position.coords.longitude.toFixed(5);
+
+            // Llamar a la API de OpenStreetMap (Nominatim)
+            const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`;
+
+            try {
+                const response = await fetch(url, {
+                    headers: {
+                        "User-Agent": "TowNowApp/1.0",  // importante para evitar bloqueos
+                        "Accept-Language": "en"
+                    }
+                });
+                const data = await response.json();
+
+                if (data && data.display_name) {
+                    document.getElementById("current_location").value = data.display_name;
+                } else {
+                    document.getElementById("current_location").value = `Lat: ${lat}, Lon: ${lon}`;
+                }
+            } catch (error) {
+                console.error("Reverse geocoding failed", error);
+                alert("Could not retrieve address. Please enter manually.");
+                document.getElementById("current_location").value = `Lat: ${lat}, Lon: ${lon}`;
+            }
+
+        }, function() {
+            alert("Could not get GPS location. Please enter manually.");
+        });
+    } else {
+        alert("Geolocation is not supported by this browser. Please enter your location manually.");
+    }
+});
 
     showStep(1);
 
