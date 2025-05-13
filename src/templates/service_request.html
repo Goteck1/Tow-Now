@@ -122,7 +122,7 @@
                 valid = false;
             }
         }
-        
+
         if (!valid) return;
 
         showStep(step);
@@ -136,7 +136,7 @@
                 vehicleType += ": " + document.getElementById("vehicle_other").value;
             }
             document.getElementById("summary_vehicle_type").textContent = vehicleType;
-            document.getElementById("estimated_price").textContent = "€XX.XX"; // Placeholder price
+            document.getElementById("estimated_price").textContent = "€XX.XX"; // Placeholder
         }
     }
 
@@ -144,14 +144,28 @@
         showStep(step);
     }
 
+    document.getElementById("vehicle_type").addEventListener("change", function () {
+        const otherGroup = document.getElementById("vehicle_other_group");
+        const otherInput = document.getElementById("vehicle_other");
+        if (this.value === "other") {
+            otherGroup.style.display = "block";
+            otherInput.required = true;
+        } else {
+            otherGroup.style.display = "none";
+            otherInput.required = false;
+            otherInput.value = "";
+        }
+    });
+
+    // ✅ Botón "Use My GPS Location" con Reverse Geocoding
     document.getElementById("use_gps_location").addEventListener("click", function () {
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(async function (position) {
                 const lat = position.coords.latitude.toFixed(5);
                 const lon = position.coords.longitude.toFixed(5);
-    
+
                 const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`;
-    
+
                 try {
                     const response = await fetch(url, {
                         headers: {
@@ -160,45 +174,28 @@
                         }
                     });
                     const data = await response.json();
+
                     if (data && data.display_name) {
                         document.getElementById("current_location").value = data.display_name;
                     } else {
                         document.getElementById("current_location").value = `Lat: ${lat}, Lon: ${lon}`;
                     }
                 } catch (error) {
-                    console.error("Error getting address:", error);
+                    console.error("Reverse geocoding failed", error);
+                    alert("Could not retrieve address. Please enter manually.");
                     document.getElementById("current_location").value = `Lat: ${lat}, Lon: ${lon}`;
                 }
+
             }, function () {
                 alert("Could not get GPS location. Please enter manually.");
             });
         } else {
-            alert("Geolocation not supported.");
+            alert("Geolocation is not supported by this browser. Please enter your location manually.");
         }
     });
-                const data = await response.json();
-
-                if (data && data.display_name) {
-                    document.getElementById("current_location").value = data.display_name;
-                } else {
-                    document.getElementById("current_location").value = `Lat: ${lat}, Lon: ${lon}`;
-                }
-            } catch (error) {
-                console.error("Reverse geocoding failed", error);
-                alert("Could not retrieve address. Please enter manually.");
-                document.getElementById("current_location").value = `Lat: ${lat}, Lon: ${lon}`;
-            }
-
-        }, function() {
-            alert("Could not get GPS location. Please enter manually.");
-        });
-    } else {
-        alert("Geolocation is not supported by this browser. Please enter your location manually.");
-    }
-});
 
     showStep(1);
-
 </script>
 {% endblock %}
+
 
