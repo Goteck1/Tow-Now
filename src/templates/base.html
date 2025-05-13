@@ -24,6 +24,7 @@
                 <li><a href="{{ url_for('main.service_request') }}" class="{% if request.endpoint == 'main.service_request' %}active{% endif %}">Request Tow</a></li>
                 <li><a href="{{ url_for('main.qa') }}" class="{% if request.endpoint == 'main.qa' %}active{% endif %}">Q&A</a></li>
                 <li><a href="{{ url_for('main.contact') }}" class="{% if request.endpoint == 'main.contact' %}active{% endif %}">Contact</a></li>
+            
                 {% if current_user and current_user.is_authenticated %}
                     {% if current_user.user_type == 'provider' %}
                         <li><a href="{{ url_for('main.service_provider_home') }}" class="{% if request.endpoint == 'main.service_provider_home' %}active{% endif %}">Provider Home</a></li>
@@ -32,7 +33,6 @@
                     {% endif %}
                     <li><a href="{{ url_for('main.logout') }}">Logout</a></li>
                 {% else %}
-                    <li><a href="{{ url_for('main.signin') }}" class="{% if request.endpoint == 'main.signin' %}active{% endif %}">Sign In</a></li>
                     <li><a href="{{ url_for('main.signup') }}" class="{% if request.endpoint == 'main.signup' %}active{% endif %}">Sign Up</a></li>
                 {% endif %}
             </ul>
