@@ -2,12 +2,34 @@
 
 {% block title %}Request a Tow - TowNow{% endblock %}
 
+{% block head_extra %}
+<!-- Mapbox GL JS -->
+<script src="https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.js"></script>
+<link href="https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.css" rel="stylesheet">
+<!-- Mapbox Geocoder Plugin -->
+<script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.min.js"></script>
+<link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.css" type="text/css">
+<style>
+    .mapboxgl-ctrl-geocoder, .mapboxgl-ctrl-geocoder--input {
+        font-size: 1rem; /* Ensure input text is readable */
+        line-height: 1.5;
+        max-width: none; /* Allow it to take full width of parent */
+    }
+    .mapboxgl-ctrl-geocoder--suggestion-title {
+        font-weight: bold;
+    }
+    .mapboxgl-ctrl-geocoder--suggestion-address {
+        font-size: 0.9em;
+    }
+</style>
+{% endblock %}
+
 {% block header_title %}Request Towing Service{% endblock %}
 {% block header_subtitle %}Fast and easy. Tell us where you are, and we will connect you with help.{% endblock %}
 
 {% block content %}
 <section id="service-request-flow-section" class="card" style="max-width: 650px; margin: 2rem auto;">
-    <form action="{{ url_for("main.submit_service_request") }}" method="POST" id="towRequestForm">
+    <form action="{{ url_for('main.submit_service_request') }}" method="POST" id="towRequestForm">
         
         {% if request.args.get("guest") == "True" %}
             <input type="hidden" name="guest_checkout" value="true">
@@ -29,13 +51,17 @@
         <div id="step-1" class="request-step active-step">
             <h3 class="text-center"><span class="step-number">1</span> Location & Destination</h3>
             <div class="form-group">
-                <label for="current_location"><i data-lucide="map-pin" class="icon"></i> Current Location:</label>
-                <input type="text" id="current_location" name="current_location" placeholder="E.g., 123 Main St, Dublin or use GPS" required>
+                <label for="current_location_geocoder_container"><i data-lucide="map-pin" class="icon"></i> Current Location:</label>
+                <div id="current_location_geocoder_container"></div>
+                <input type="hidden" id="current_location" name="current_location" required>
+                 <input type="hidden" id="current_location_zone" name="current_location_zone">
                 <button type="button" id="use_gps_location" class="btn btn-secondary btn-sm mt-1" style="width: auto; font-size: 0.85rem; padding: 0.4rem 0.8rem;">Use My GPS Location</button>
             </div>
             <div class="form-group">
-                <label for="destination"><i data-lucide="route" class="icon"></i> Destination Address:</label>
-                <input type="text" id="destination" name="destination" placeholder="E.g., Your Home or Mechanic Garage" required>
+                <label for="destination_geocoder_container"><i data-lucide="route" class="icon"></i> Destination Address:</label>
+                <div id="destination_geocoder_container"></div>
+                <input type="hidden" id="destination" name="destination" required>
+                <input type="hidden" id="destination_zone" name="destination_zone">
             </div>
             <div class="step-navigation">
                 <button type="button" onclick="nextStep(2)" class="btn btn-primary btn-full-width">Next: Vehicle Details</button>
@@ -53,6 +79,8 @@
                     <option value="suv">SUV / 4x4 / Small Van</option>
                     <option value="truck">Large Van / Pickup Truck / Light Commercial</option>
                     <option value="motorcycle">Motorcycle / Scooter</option>
+                    <option value="van">Van (General)</option>
+                    <option value="electric">Electric Vehicle (Specify type if needed)</option>
                     <option value="other">Other (Please specify below)</option>
                 </select>
             </div>
@@ -79,6 +107,10 @@
                 <p><strong>Destination:</strong> <span id="summary_destination"></span></p>
                 <p><strong>Vehicle:</strong> <span id="summary_vehicle_type"></span></p>
                 <p><strong>Estimated Price:</strong> <strong id="estimated_price" style="font-size: 1.1em; color: #007bff;">Calculating...</strong></p> 
+                <div id="price_breakdown_details" style="font-size: 0.8em; margin-top: 10px; display: none;">
+                    <p><strong>Price Breakdown:</strong></p>
+                    <pre id="price_breakdown_content" style="white-space: pre-wrap; word-wrap: break-word;"></pre>
+                </div>
             </div>
             <p class="text-center" style="font-size: 0.9rem; margin-top: 1rem;">You will be redirected to a secure payment platform to complete your request. We will contact you shortly after payment to confirm dispatch.</p>
             <div class="step-navigation">
@@ -93,8 +125,76 @@
 
 {% block scripts %}
 <script>
+    const MAPBOX_ACCESS_TOKEN = "pk.eyJ1Ijoiam9hcXVpbmFsZSIsImEiOiJjbWFtbXh0OXkwbHdzMmtzZGpudXFreTdkIn0.o8lo9--pdwMvJrnz_rKuKg"; // Replace with your Mapbox Access Token
+    mapboxgl.accessToken = MAPBOX_ACCESS_TOKEN;
+
     const steps = document.querySelectorAll(".request-step");
     let currentStep = 1;
+
+    // Initialize Geocoders
+    const currentLocationGeocoder = new MapboxGeocoder({
+        accessToken: mapboxgl.accessToken,
+        mapboxgl: mapboxgl,
+        placeholder: "E.g., 123 Main St, Dublin",
+        countries: 'IE', // Restrict to Ireland
+        bbox: [-10.83, 51.39, -5.34, 55.43] // Bounding box for Ireland
+    });
+    currentLocationGeocoder.addTo('#current_location_geocoder_container');
+
+    const destinationGeocoder = new MapboxGeocoder({
+        accessToken: mapboxgl.accessToken,
+        mapboxgl: mapboxgl,
+        placeholder: "E.g., Your Home or Mechanic Garage",
+        countries: 'IE',
+        bbox: [-10.83, 51.39, -5.34, 55.43]
+    });
+    destinationGeocoder.addTo('#destination_geocoder_container');
+
+    // Store geocoder results in hidden fields and extract zone
+    function getDublinPostalDistrict(place) {
+        if (place && place.context) {
+            for (let i = 0; i < place.context.length; i++) {
+                const component = place.context[i];
+                // Check for postcode (e.g., D01, D1, D24) or locality (e.g., Lucan, Swords)
+                if (component.id.startsWith('postcode.') && component.text.match(/^D\d{1,2}W?$/i)) {
+                    return component.text.toUpperCase();
+                }
+                if (component.id.startsWith('locality.')) {
+                     // Add more specific localities if needed from your zone list
+                    const knownLocalities = ["Lucan", "Swords", "Malahide", "Blanchardstown", "Baldoyle", "Portmarnock", "Skerries", "Howth", "Clondalkin", "Tallaght", "Rathfarnham", "Balbriggan", "Bray", "Maynooth"];
+                    if (knownLocalities.includes(component.text)) {
+                        return component.text;
+                    }
+                }
+                 // Fallback for district from address string if available
+                if (component.id.startsWith('district.') && component.text.match(/^Dublin \d{1,2}W?$/i)) {
+                    return component.text.replace("Dublin ", "D").toUpperCase();
+                }
+            }
+        }
+        // Fallback if no specific zone found, try to get a general area or return 'Outside'
+        if (place && place.place_name) {
+            const knownAreas = ["Lucan", "Swords", "Malahide", "Blanchardstown", "Baldoyle", "Portmarnock", "Skerries", "Howth", "Clondalkin", "Tallaght", "Rathfarnham", "Balbriggan", "Bray", "Maynooth"];
+            for (const area of knownAreas) {
+                if (place.place_name.includes(area)) return area;
+            }
+            const dublinMatch = place.place_name.match(/Dublin (\d{1,2}W?)/i);
+            if (dublinMatch && dublinMatch[1]) {
+                return "D" + dublinMatch[1].toUpperCase();
+            }
+        }
+        return 'Outside'; // Default if no specific zone is identified
+    }
+
+    currentLocationGeocoder.on('result', (e) => {
+        document.getElementById('current_location').value = e.result.place_name;
+        document.getElementById('current_location_zone').value = getDublinPostalDistrict(e.result);
+    });
+
+    destinationGeocoder.on('result', (e) => {
+        document.getElementById('destination').value = e.result.place_name;
+        document.getElementById('destination_zone').value = getDublinPostalDistrict(e.result);
+    });
 
     function showStep(stepNumber) {
         steps.forEach(step => step.style.display = "none");
@@ -105,11 +205,44 @@
         currentStep = stepNumber;
     }
 
+    async function fetchPrice() {
+        const originZone = document.getElementById('current_location_zone').value || 'Outside';
+        const destinationZone = document.getElementById('destination_zone').value || 'Outside';
+        const vehicleType = document.getElementById('vehicle_type').value;
+
+        if (!originZone || !destinationZone || !vehicleType) {
+            document.getElementById("estimated_price").textContent = "Missing info for price.";
+            return;
+        }
+        document.getElementById("estimated_price").textContent = "Calculating...";
+        document.getElementById("price_breakdown_details").style.display = 'none';
+
+        try {
+            const response = await fetch(`/calculate_price?origin_zone=${encodeURIComponent(originZone)}&destination_zone=${encodeURIComponent(destinationZone)}&vehicle_type=${encodeURIComponent(vehicleType)}`);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const data = await response.json();
+            if (data.price) {
+                document.getElementById("estimated_price").textContent = `€${data.price.toFixed(2)}`;
+                if (data.breakdown) {
+                    document.getElementById("price_breakdown_content").textContent = JSON.stringify(data.breakdown, null, 2);
+                    document.getElementById("price_breakdown_details").style.display = 'block'; 
+                }
+            } else {
+                document.getElementById("estimated_price").textContent = "Error calculating price.";
+            }
+        } catch (error) {
+            console.error('Error fetching price:', error);
+            document.getElementById("estimated_price").textContent = "Could not fetch price.";
+        }
+    }
+
     function nextStep(step) {
         let valid = true;
         if (currentStep === 1) {
             if (!document.getElementById("current_location").value || !document.getElementById("destination").value) {
-                alert("Please fill in current location and destination.");
+                alert("Please fill in current location and destination using the search boxes.");
                 valid = false;
             }
         } else if (currentStep === 2) {
@@ -122,7 +255,7 @@
                 valid = false;
             }
         }
-
+        
         if (!valid) return;
 
         showStep(step);
@@ -131,12 +264,12 @@
             document.getElementById("summary_current_location").textContent = document.getElementById("current_location").value;
             document.getElementById("summary_destination").textContent = document.getElementById("destination").value;
             let vehicleSelect = document.getElementById("vehicle_type");
-            let vehicleType = vehicleSelect.options[vehicleSelect.selectedIndex].text;
+            let vehicleTypeSummary = vehicleSelect.options[vehicleSelect.selectedIndex].text;
             if (vehicleSelect.value === "other") {
-                vehicleType += ": " + document.getElementById("vehicle_other").value;
+                vehicleTypeSummary += ": " + document.getElementById("vehicle_other").value;
             }
-            document.getElementById("summary_vehicle_type").textContent = vehicleType;
-            document.getElementById("estimated_price").textContent = "€XX.XX"; // Placeholder
+            document.getElementById("summary_vehicle_type").textContent = vehicleTypeSummary;
+            fetchPrice(); // Fetch dynamic price
         }
     }
 
@@ -144,7 +277,7 @@
         showStep(step);
     }
 
-    document.getElementById("vehicle_type").addEventListener("change", function () {
+    document.getElementById("vehicle_type").addEventListener("change", function() {
         const otherGroup = document.getElementById("vehicle_other_group");
         const otherInput = document.getElementById("vehicle_other");
         if (this.value === "other") {
@@ -157,36 +290,30 @@
         }
     });
 
-    // ✅ Botón "Use My GPS Location" con Reverse Geocoding
-    document.getElementById("use_gps_location").addEventListener("click", function () {
+    document.getElementById("use_gps_location").addEventListener("click", function() {
         if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(async function (position) {
-                const lat = position.coords.latitude.toFixed(5);
-                const lon = position.coords.longitude.toFixed(5);
-
-                const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`;
-
-                try {
-                    const response = await fetch(url, {
-                        headers: {
-                            "User-Agent": "TowNowApp/1.0",
-                            "Accept-Language": "en"
+            navigator.geolocation.getCurrentPosition(function(position) {
+                const coords = [position.coords.longitude, position.coords.latitude];
+                // Use Mapbox reverse geocoding to get address and set geocoder
+                fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${coords[0]},${coords[1]}.json?access_token=${MAPBOX_ACCESS_TOKEN}&types=address,postcode,locality,place,district`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.features && data.features.length > 0) {
+                            const bestResult = data.features[0];
+                            currentLocationGeocoder.setInput(bestResult.place_name);
+                            document.getElementById('current_location').value = bestResult.place_name;
+                            document.getElementById('current_location_zone').value = getDublinPostalDistrict(bestResult);
+                        } else {
+                            document.getElementById("current_location").value = `Lat: ${position.coords.latitude.toFixed(5)}, Lon: ${position.coords.longitude.toFixed(5)}`;
+                             document.getElementById('current_location_zone').value = 'Outside'; // Default if reverse geocoding fails
+                            alert("Could not find address for GPS location. Using coordinates. Zone set to 'Outside'.");
                         }
+                    })
+                    .catch(err => {
+                        console.error("Error reverse geocoding: ", err);
+                        alert("Error finding address for GPS. Please enter manually.");
                     });
-                    const data = await response.json();
-
-                    if (data && data.display_name) {
-                        document.getElementById("current_location").value = data.display_name;
-                    } else {
-                        document.getElementById("current_location").value = `Lat: ${lat}, Lon: ${lon}`;
-                    }
-                } catch (error) {
-                    console.error("Reverse geocoding failed", error);
-                    alert("Could not retrieve address. Please enter manually.");
-                    document.getElementById("current_location").value = `Lat: ${lat}, Lon: ${lon}`;
-                }
-
-            }, function () {
+            }, function() {
                 alert("Could not get GPS location. Please enter manually.");
             });
         } else {
@@ -195,7 +322,7 @@
     });
 
     showStep(1);
+
 </script>
 {% endblock %}
-
 
