@@ -227,7 +227,7 @@ if __name__ == "__main__":
     # Test with a night time
     night_time = datetime.datetime(2024, 5, 10, 23, 0) # 11:00 PM
     price_details_2 = calculate_dynamic_price(origin, destination, "suv", current_dt=night_time)
-    print(f"Test Case 2 (City Centre to Airport, SUV, Night Time 11:00 PM): Price: €{price_details_2.get("price")} Error: {price_details_2.get("error")}")
+    print(f"Test Case 2 (City Centre to Airport, SUV, Night Time 11:00 PM): Price: €{price_details_2.get('price')} Error: {price_details_2.get('error')}")
     if price_details_2.get("breakdown"):
         print("Breakdown 2:", price_details_2["breakdown"])
 
