@@ -427,7 +427,7 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-@admin_bp.route('/dashboard')
+@admin_bp.route('admin/dashboard')
 @admin_required
 def dashboard():
     user_count = User.query.count()
@@ -435,13 +435,13 @@ def dashboard():
     # Add more stats as needed
     return render_template('dashboard.html', user_count=user_count, request_count=request_count)
 
-@admin_bp.route('/manage_users')
+@admin_bp.route('admin/manage_users')
 @admin_required
 def manage_users():
     users = User.query.all()
     return render_template('manage_users.html', users=users)
 
-@admin_bp.route('/manage_requests')
+@admin_bp.route('admin/manage_requests')
 @admin_required
 def manage_requests():
     service_requests = ServiceRequest.query.order_by(ServiceRequest.created_at.desc()).all()
