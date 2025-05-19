@@ -11,7 +11,7 @@ from flask_login import LoginManager, UserMixin, login_user, logout_user, curren
 import datetime 
 
 # Import the new pricing logic function
-from pricing_logic import calculate_dynamic_price # This will be updated later to take db session or config
+from pricing_logic import calculate_dynamic_price 
 
 app = Flask(__name__,
             static_folder=os.path.join(os.path.dirname(__file__), 'static'),
@@ -38,14 +38,41 @@ class User(UserMixin, db.Model):
     fullname = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(100), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
-    user_type = db.Column(db.String(20), nullable=False, default='customer') 
+    user_type = db.Column(db.String(20), nullable=False, default='customer') # 'customer', 'provider', 'admin'
     is_admin = db.Column(db.Boolean, default=False) 
+
+    # Provider-specific fields (nullable if user is not a provider)
+    service_zones_json = db.Column(db.Text, nullable=True) # JSON string for list of zones, e.g., ["D1", "D2", "Lucan"]
+    accepted_vehicle_types_json = db.Column(db.Text, nullable=True) # JSON string for list of vehicle types, e.g., ["sedan", "suv"]
+    is_available = db.Column(db.Boolean, nullable=True, default=True) # Provider availability status
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+    
+    def get_service_zones(self):
+        if self.service_zones_json:
+            try:
+                return json.loads(self.service_zones_json)
+            except json.JSONDecodeError:
+                return []
+        return []
+
+    def set_service_zones(self, zones_list):
+        self.service_zones_json = json.dumps(zones_list)
+
+    def get_accepted_vehicle_types(self):
+        if self.accepted_vehicle_types_json:
+            try:
+                return json.loads(self.accepted_vehicle_types_json)
+            except json.JSONDecodeError:
+                return []
+        return []
+
+    def set_accepted_vehicle_types(self, vehicle_types_list):
+        self.accepted_vehicle_types_json = json.dumps(vehicle_types_list)
 
 class ServiceRequest(db.Model):
     __tablename__ = 'service_requests'
@@ -76,13 +103,14 @@ class PricingConfig(db.Model):
     fixed_base_fare = db.Column(db.Float, nullable=False, default=10.0)
     fare_per_km = db.Column(db.Float, nullable=False, default=1.2)
     fare_per_minute = db.Column(db.Float, nullable=False, default=0.3)
-    vehicle_types_json = db.Column(db.Text, nullable=False) # Stores JSON string
-    time_coefficients_json = db.Column(db.Text, nullable=False) # Stores JSON string
+    vehicle_types_json = db.Column(db.Text, nullable=False) 
+    time_coefficients_json = db.Column(db.Text, nullable=False) 
     traffic_coefficient = db.Column(db.Float, nullable=False, default=1.3)
+    admin_commission_percentage = db.Column(db.Float, nullable=False, default=0.25) # e.g., 0.25 for 25%
     # Fallback zone-based pricing (can be deprecated or kept)
     base_unit_zone_fallback = db.Column(db.Float, nullable=True, default=50.0)
-    zones_json = db.Column(db.Text, nullable=True) # Stores JSON string for zones
-    weights_zone_fallback_json = db.Column(db.Text, nullable=True) # Stores JSON string for weights
+    zones_json = db.Column(db.Text, nullable=True) 
+    weights_zone_fallback_json = db.Column(db.Text, nullable=True) 
     updated_at = db.Column(db.DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
 
     def default_vehicle_types(self):
@@ -137,7 +165,7 @@ def initialize_database():
         # Initialize Admin User
         if not User.query.filter_by(email='admin@townow.local').first():
             admin_user = User(fullname='Admin User', email='admin@townow.local', user_type='admin', is_admin=True)
-            admin_user.set_password('adminpass') # Consider making this configurable via env var
+            admin_user.set_password('adminpass') 
             db.session.add(admin_user)
             print("Default admin user created.")
 
@@ -148,6 +176,7 @@ def initialize_database():
                 fare_per_km=1.2,
                 fare_per_minute=0.3,
                 traffic_coefficient=1.3,
+                admin_commission_percentage=0.25, # Default commission
                 base_unit_zone_fallback=50.0 
             )
             default_config.vehicle_types_json = default_config.default_vehicle_types()
@@ -160,6 +189,15 @@ def initialize_database():
         db.session.commit()
 
 initialize_database()
+
+# --- Helper Function for Provider Profit ---
+def calculate_provider_profit(total_price, admin_commission_percentage):
+    if admin_commission_percentage < 0 or admin_commission_percentage > 1:
+        # Invalid commission, perhaps log an error or use a default
+        # For now, assume commission is valid if it reaches here from DB
+        pass 
+    provider_share = 1 - admin_commission_percentage
+    return round(total_price * provider_share, 2)
 
 # --- Routes (Blueprint 'main' for modularity) ---
 from flask import Blueprint
@@ -184,13 +222,20 @@ def get_price_estimate():
         origin_coords = (origin_lng, origin_lat)
         destination_coords = (dest_lng, dest_lat)
         
-        # Fetch current pricing config from DB
         current_pricing_config = PricingConfig.query.first()
         if not current_pricing_config:
-            # This should ideally not happen if initialize_database worked
             return jsonify({"error": "Pricing configuration not found in database."}), 500
 
         price_details = calculate_dynamic_price(origin_coords, destination_coords, vehicle_type, current_pricing_config)
+        
+        # Add provider profit to the response if price calculation was successful
+        if price_details.get("price") and not price_details.get("error"):
+            price_details["provider_profit_estimate"] = calculate_provider_profit(
+                price_details["price"],
+                current_pricing_config.admin_commission_percentage
+            )
+            price_details["admin_commission_percentage"] = current_pricing_config.admin_commission_percentage
+
         return jsonify(price_details)
     except ValueError:
          return jsonify({"error": "Invalid coordinate format. Longitude and latitude must be numbers."}), 400
@@ -224,6 +269,12 @@ def signup():
 
         new_user = User(fullname=fullname, email=email, user_type=user_type)
         new_user.set_password(password)
+        # Set default empty JSON for provider specific fields if user_type is provider
+        if user_type == 'provider':
+            new_user.service_zones_json = json.dumps([])
+            new_user.accepted_vehicle_types_json = json.dumps([])
+            new_user.is_available = True # Default to available
+
         db.session.add(new_user)
         db.session.commit()
         flash('Account created successfully. You can now sign in.', 'success')
@@ -271,6 +322,45 @@ def user_home():
         flash('Unauthorized access.', 'danger')
         return redirect(url_for('main.home'))
     return render_template('user_home.html', user=current_user)
+
+# Placeholder for Provider Profile Page - to be developed
+@main_bp.route('/provider_profile', methods=['GET', 'POST'])
+@login_required
+def provider_profile():
+    if current_user.user_type != 'provider' or current_user.is_admin:
+        flash('Unauthorized access.', 'danger')
+        return redirect(url_for('main.home'))
+
+    if request.method == 'POST':
+        current_user.is_available = request.form.get('is_available') == 'on'
+        
+        service_zones_str = request.form.get('service_zones', '')
+        try:
+            # Basic validation: split by comma, strip whitespace, filter empty
+            zones_list = [zone.strip() for zone in service_zones_str.split(',') if zone.strip()]
+            current_user.set_service_zones(zones_list)
+        except Exception as e:
+            flash(f'Error processing service zones: {e}', 'danger')
+
+        accepted_vehicles_str = request.form.get('accepted_vehicle_types', '')
+        try:
+            vehicles_list = [v.strip() for v in accepted_vehicles_str.split(',') if v.strip()]
+            current_user.set_accepted_vehicle_types(vehicles_list)
+        except Exception as e:
+            flash(f'Error processing accepted vehicle types: {e}', 'danger')
+        
+        db.session.commit()
+        flash('Profile updated successfully!', 'success')
+        return redirect(url_for('main.provider_profile'))
+
+    # Prepare data for the form
+    current_zones_str = ", ".join(current_user.get_service_zones())
+    current_vehicles_str = ", ".join(current_user.get_accepted_vehicle_types())
+
+    return render_template('provider_profile.html', 
+                           provider=current_user, 
+                           current_zones_str=current_zones_str,
+                           current_vehicles_str=current_vehicles_str)
 
 @main_bp.route('/service_provider_home')
 @login_required
@@ -356,7 +446,7 @@ def submit_service_request():
             return redirect(redirect_url)
         
         estimated_price = price_data['price']
-        price_breakdown_str = json.dumps(price_data['breakdown']) # Use json.dumps for consistency
+        price_breakdown_str = json.dumps(price_data['breakdown']) 
     except Exception as e:
         app.logger.error(f"Error calculating price during submission: {e}")
         flash('Error calculating service price. Please try again or contact support.', 'danger')
@@ -376,20 +466,21 @@ def submit_service_request():
         vehicle_details=vehicle_details,
         price=estimated_price,
         price_breakdown_json=price_breakdown_str,
-        status='Pending Payment' 
+        status='Pending Assignment' # New initial status
     )
     db.session.add(new_request)
     db.session.commit()
 
-    # Simulate payment for now
-    new_request.status = 'Paid' 
-    db.session.commit()
+    # Placeholder: Trigger alert logic here in the future
+    # For now, simulate payment and assignment for testing flow
+    # new_request.status = 'Paid' 
+    # db.session.commit()
 
     if is_guest_checkout:
-        flash(f'Guest request received (ID: {new_request.id}). Price: €{estimated_price:.2f}. Status: {new_request.status}. We will contact you at {guest_phone_form}.', 'success')
+        flash(f'Guest request received (ID: {new_request.id}). Price: €{estimated_price:.2f}. Status: {new_request.status}. We will contact you at {guest_phone_form}. Searching for providers...', 'success')
         return redirect(url_for('main.home')) 
     else:
-        flash(f'Request received (ID: {new_request.id}). Price: €{estimated_price:.2f}. Status: {new_request.status}. Tow truck assignment is simulated.', 'success')
+        flash(f'Request received (ID: {new_request.id}). Price: €{estimated_price:.2f}. Status: {new_request.status}. Searching for providers...', 'success')
         return redirect(url_for('main.user_home'))
 
 @main_bp.route('/service_provider_dashboard')
@@ -398,7 +489,6 @@ def service_provider_dashboard():
     if current_user.user_type != 'provider' or current_user.is_admin:
         flash('Unauthorized access.', 'danger')
         return redirect(url_for('main.home'))
-    # Placeholder for actual data fetching
     active_requests_data = [] 
     return render_template('service_provider_dashboard.html', active_requests=active_requests_data, provider=current_user)
 
@@ -409,13 +499,12 @@ def qa():
 @main_bp.route('/contact', methods=['GET', 'POST'])
 def contact():
     if request.method == 'POST':
-        # Here you would typically handle the form data (e.g., send an email)
         flash('Thank you for your message. We will get back to you soon.', 'success')
         return redirect(url_for('main.contact'))
     return render_template('contact.html')
 
 # --- Admin Panel Blueprint ---
-admin_bp = Blueprint('admin_bp', __name__, url_prefix='/admin', template_folder='admin') # Corrected template_folder
+admin_bp = Blueprint('admin_bp', __name__, url_prefix='/admin', template_folder='admin')
 
 from functools import wraps
 def admin_required(f):
@@ -427,30 +516,102 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-@admin_bp.route('/admin/dashboard')
+@admin_bp.route('/dashboard')
 @admin_required
 def dashboard():
     user_count = User.query.count()
     request_count = ServiceRequest.query.count()
-    # Add more stats as needed
     return render_template('dashboard.html', user_count=user_count, request_count=request_count)
 
-@admin_bp.route('/admin/manage_users')
+@admin_bp.route('/manage_users')
 @admin_required
 def manage_users():
     users = User.query.all()
     return render_template('manage_users.html', users=users)
 
-@admin_bp.route('/admin/manage_requests')
+@admin_bp.route('/manage_requests')
 @admin_required
 def manage_requests():
     service_requests = ServiceRequest.query.order_by(ServiceRequest.created_at.desc()).all()
     return render_template('manage_requests.html', service_requests=service_requests)
+
+@admin_bp.route('/manage_pricing', methods=['GET', 'POST'])
+@admin_required
+def manage_pricing():
+    config = PricingConfig.query.first()
+    if not config: # Should be created by initialize_database
+        flash('Pricing configuration not found. Please restart the application or check logs.', 'danger')
+        return redirect(url_for('admin_bp.dashboard'))
+
+    if request.method == 'POST':
+        try:
+            config.fixed_base_fare = float(request.form['fixed_base_fare'])
+            config.fare_per_km = float(request.form['fare_per_km'])
+            config.fare_per_minute = float(request.form['fare_per_minute'])
+            config.traffic_coefficient = float(request.form['traffic_coefficient'])
+            config.admin_commission_percentage = float(request.form['admin_commission_percentage'])
+            
+            # Validate commission is between 0 and 1
+            if not (0 <= config.admin_commission_percentage <= 1):
+                flash('Admin commission percentage must be between 0 (0%) and 1 (100%).', 'danger')
+                return render_template('manage_pricing.html', config=config)
+
+            # Validate JSON fields
+            try:
+                json.loads(request.form['vehicle_types_json'])
+                config.vehicle_types_json = request.form['vehicle_types_json']
+            except json.JSONDecodeError:
+                flash('Invalid JSON format for Vehicle Type Coefficients.', 'danger')
+                return render_template('manage_pricing.html', config=config)
+            
+            try:
+                json.loads(request.form['time_coefficients_json'])
+                config.time_coefficients_json = request.form['time_coefficients_json']
+            except json.JSONDecodeError:
+                flash('Invalid JSON format for Time Coefficients.', 'danger')
+                return render_template('manage_pricing.html', config=config)
+
+            # Optional fallback fields
+            if request.form.get('base_unit_zone_fallback'):
+                config.base_unit_zone_fallback = float(request.form['base_unit_zone_fallback'])
+            else:
+                config.base_unit_zone_fallback = None # Or a default if preferred
+            
+            if request.form.get('zones_json'):
+                try:
+                    json.loads(request.form['zones_json'])
+                    config.zones_json = request.form['zones_json']
+                except json.JSONDecodeError:
+                    flash('Invalid JSON format for Zone Coefficients (Fallback).', 'danger')
+                    return render_template('manage_pricing.html', config=config)
+            else:
+                config.zones_json = None
+
+            if request.form.get('weights_zone_fallback_json'):
+                try:
+                    json.loads(request.form['weights_zone_fallback_json'])
+                    config.weights_zone_fallback_json = request.form['weights_zone_fallback_json']
+                except json.JSONDecodeError:
+                    flash('Invalid JSON format for Zone Weights (Fallback).', 'danger')
+                    return render_template('manage_pricing.html', config=config)
+            else:
+                config.weights_zone_fallback_json = None
+
+            db.session.commit()
+            flash('Pricing configuration updated successfully!', 'success')
+        except ValueError:
+            flash('Invalid input for one or more numeric fields.', 'danger')
+        except Exception as e:
+            flash(f'An error occurred: {str(e)}', 'danger')
+            db.session.rollback() # Rollback in case of other errors
+        return redirect(url_for('admin_bp.manage_pricing'))
+
+    return render_template('manage_pricing.html', config=config)
 
 # Register Blueprints
 app.register_blueprint(main_bp)
 app.register_blueprint(admin_bp)
 
 if __name__ == '__main__':
-    # IMPORTANT: For Render, Gunicorn will be used. This is for local dev.
     app.run(debug=True, host='0.0.0.0', port=5000)
+
