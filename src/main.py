@@ -518,12 +518,12 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-@admin_bp.route('/dashboard')
+@admin_bp.route('admin/dashboard')
 @admin_required
 def dashboard():
     user_count = User.query.count()
     request_count = ServiceRequest.query.count()
-    return render_template('dashboard.html', user_count=user_count, request_count=request_count)
+    return render_template('admin/dashboard.html', user_count=user_count, request_count=request_count)
 
 @admin_bp.route('/manage_users')
 @admin_required
