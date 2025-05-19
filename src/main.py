@@ -537,7 +537,7 @@ def manage_requests():
     service_requests = ServiceRequest.query.order_by(ServiceRequest.created_at.desc()).all()
     return render_template('admin/manage_requests.html', service_requests=service_requests)
 
-@admin_bp.route('admin/manage_pricing', methods=['GET', 'POST'])
+@admin_bp.route('/manage_pricing', methods=['GET', 'POST'])
 @admin_required
 def manage_pricing():
     config = PricingConfig.query.first()
