@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}My Provider Profile - TowNow{% endblock %}
+
+{% block content %}
+<div class="container mt-5 mb-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">My Provider Profile</h4>
+                </div>
+                <div class="card-body">
+                    <p class="lead">Manage your service areas, accepted vehicle types, and availability.</p>
+                    
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+
+                    <form method="POST" action="{{ url_for(\'main.provider_profile\') }}">
+                        <div class="mb-3">
+                            <label for="fullname" class="form-label">Full Name</label>
+                            <input type="text" class="form-control" id="fullname" value="{{ provider.fullname }}" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="email" value="{{ provider.email }}" readonly>
+                        </div>
+
+                        <hr>
+                        <h5 class="mt-4 mb-3">Service Settings</h5>
+
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" role="switch" id="is_available" name="is_available" {% if provider.is_available %}checked{% endif %}>
+                            <label class="form-check-label" for="is_available">I am currently available for new service requests</label>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="service_zones" class="form-label">Service Zones (comma-separated)</label>
+                            <input type="text" class="form-control" id="service_zones" name="service_zones" value="{{ current_zones_str }}" placeholder="e.g., D1, D2, Lucan, Swords">
+                            <small class="form-text text-muted">Enter the postal codes or area names where you operate, separated by commas.</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="accepted_vehicle_types" class="form-label">Accepted Vehicle Types (comma-separated)</label>
+                            <input type="text" class="form-control" id="accepted_vehicle_types" name="accepted_vehicle_types" value="{{ current_vehicles_str }}" placeholder="e.g., sedan, suv, motorcycle">
+                            <small class="form-text text-muted">Enter the vehicle types you can service, separated by commas (must match system types like 'sedan', 'suv', 'truck', 'motorcycle', 'van', 'electric', 'other').</small>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary mt-3">Update Profile</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
