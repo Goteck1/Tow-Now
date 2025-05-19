@@ -6,7 +6,7 @@
 <div class="container-fluid">
     <h1 class="mt-4">Manage Pricing Configuration</h1>
     <ol class="breadcrumb mb-4">
-        <li class="breadcrumb-item"><a href="{{ url_for(\'admin_bp.dashboard\') }}">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('admin_bp.dashboard') }}">Dashboard</a></li>
         <li class="breadcrumb-item active">Pricing Configuration</li>
     </ol>
 
@@ -17,7 +17,7 @@
         </div>
         <div class="card-body">
             <p>Here you can adjust the parameters used for calculating service prices. Please be careful with JSON formats and percentages (e.g., 0.25 for 25%).</p>
-            <form method="POST" action="{{ url_for(\'admin_bp.manage_pricing\') }}">
+            <form method="POST" action="{{ url_for('admin_bp.manage_pricing') }}">
                 <div class="row">
                     <div class="col-md-4">
                         <div class="form-group mb-3">
