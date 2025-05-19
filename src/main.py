@@ -537,7 +537,7 @@ def manage_requests():
     service_requests = ServiceRequest.query.order_by(ServiceRequest.created_at.desc()).all()
     return render_template('admin/manage_requests.html', service_requests=service_requests)
 
-@admin_bp.route('/manage_pricing', methods=['GET', 'POST'])
+@admin_bp.route('admin/manage_pricing', methods=['GET', 'POST'])
 @admin_required
 def manage_pricing():
     config = PricingConfig.query.first()
@@ -556,7 +556,7 @@ def manage_pricing():
             # Validate commission is between 0 and 1
             if not (0 <= config.admin_commission_percentage <= 1):
                 flash('Admin commission percentage must be between 0 (0%) and 1 (100%).', 'danger')
-                return render_template('manage_pricing.html', config=config)
+                return render_template('admin/manage_pricing.html', config=config)
 
             # Validate JSON fields
             try:
@@ -564,14 +564,14 @@ def manage_pricing():
                 config.vehicle_types_json = request.form['vehicle_types_json']
             except json.JSONDecodeError:
                 flash('Invalid JSON format for Vehicle Type Coefficients.', 'danger')
-                return render_template('manage_pricing.html', config=config)
+                return render_template('admin/manage_pricing.html', config=config)
             
             try:
                 json.loads(request.form['time_coefficients_json'])
                 config.time_coefficients_json = request.form['time_coefficients_json']
             except json.JSONDecodeError:
                 flash('Invalid JSON format for Time Coefficients.', 'danger')
-                return render_template('manage_pricing.html', config=config)
+                return render_template('admin/manage_pricing.html', config=config)
 
             # Optional fallback fields
             if request.form.get('base_unit_zone_fallback'):
@@ -585,7 +585,7 @@ def manage_pricing():
                     config.zones_json = request.form['zones_json']
                 except json.JSONDecodeError:
                     flash('Invalid JSON format for Zone Coefficients (Fallback).', 'danger')
-                    return render_template('manage_pricing.html', config=config)
+                    return render_template('admin/manage_pricing.html', config=config)
             else:
                 config.zones_json = None
 
@@ -595,7 +595,7 @@ def manage_pricing():
                     config.weights_zone_fallback_json = request.form['weights_zone_fallback_json']
                 except json.JSONDecodeError:
                     flash('Invalid JSON format for Zone Weights (Fallback).', 'danger')
-                    return render_template('manage_pricing.html', config=config)
+                    return render_template('admin/manage_pricing.html', config=config)
             else:
                 config.weights_zone_fallback_json = None
 
@@ -608,7 +608,7 @@ def manage_pricing():
             db.session.rollback() # Rollback in case of other errors
         return redirect(url_for('admin_bp.manage_pricing'))
 
-    return render_template('manage_pricing.html', config=config)
+    return render_template('admin/manage_pricing.html', config=config)
 
 # Register Blueprints
 app.register_blueprint(main_bp)
