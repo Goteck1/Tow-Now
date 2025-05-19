@@ -1,0 +1,122 @@
+{% extends "admin/admin_base.html" %}
+
+{% block admin_title %}Manage Pricing Configuration - TowNow Admin{% endblock %}
+
+{% block admin_content %}
+<div class="container-fluid">
+    <h1 class="mt-4">Manage Pricing Configuration</h1>
+    <ol class="breadcrumb mb-4">
+        <li class="breadcrumb-item"><a href="{{ url_for(\'admin_bp.dashboard\') }}">Dashboard</a></li>
+        <li class="breadcrumb-item active">Pricing Configuration</li>
+    </ol>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <i class="fas fa-cogs me-1"></i>
+            Edit Pricing Parameters
+        </div>
+        <div class="card-body">
+            <p>Here you can adjust the parameters used for calculating service prices. Please be careful with JSON formats and percentages (e.g., 0.25 for 25%).</p>
+            <form method="POST" action="{{ url_for(\'admin_bp.manage_pricing\') }}">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="form-group mb-3">
+                            <label for="fixed_base_fare">Fixed Base Fare (€)</label>
+                            <input type="number" step="0.01" class="form-control" id="fixed_base_fare" name="fixed_base_fare" value="{{ config.fixed_base_fare if config else \'\' }}" required>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group mb-3">
+                            <label for="fare_per_km">Fare per KM (€)</label>
+                            <input type="number" step="0.01" class="form-control" id="fare_per_km" name="fare_per_km" value="{{ config.fare_per_km if config else \'\' }}" required>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group mb-3">
+                            <label for="fare_per_minute">Fare per Minute (€)</label>
+                            <input type="number" step="0.01" class="form-control" id="fare_per_minute" name="fare_per_minute" value="{{ config.fare_per_minute if config else \'\' }}" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group mb-3">
+                            <label for="traffic_coefficient">Traffic Coefficient (e.g., 1.0 for normal, 1.3 for high)</label>
+                            <input type="number" step="0.01" class="form-control" id="traffic_coefficient" name="traffic_coefficient" value="{{ config.traffic_coefficient if config else \'\' }}" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group mb-3">
+                            <label for="admin_commission_percentage">Admin Commission Percentage (e.g., 0.25 for 25%)</label>
+                            <input type="number" step="0.01" min="0" max="1" class="form-control" id="admin_commission_percentage" name="admin_commission_percentage" value="{{ config.admin_commission_percentage if config else \'\' }}" required>
+                            <small class="form-text text-muted">Enter a value between 0 (0%) and 1 (100%).</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <hr>
+                <h5 class="mt-3">Advanced Coefficients (JSON format)</h5>
+
+                <div class="form-group mb-3">
+                    <label for="vehicle_types_json">Vehicle Type Coefficients (JSON)</label>
+                    <textarea class="form-control" id="vehicle_types_json" name="vehicle_types_json" rows="6" required>{{ config.vehicle_types_json if config else \'\' }}</textarea>
+                    <small class="form-text text-muted">Example: {"sedan": 1.0, "suv": 1.3, ...}</small>
+                </div>
+
+                <div class="form-group mb-3">
+                    <label for="time_coefficients_json">Time Coefficients (JSON)</label>
+                    <textarea class="form-control" id="time_coefficients_json" name="time_coefficients_json" rows="8" required>{{ config.time_coefficients_json if config else \'\' }}</textarea>
+                    <small class="form-text text-muted">Example: {"peak_hours": {"coef": 1.2, "ranges": [[7,10],[16,19]]}, ...}</small>
+                </div>
+                
+                <hr>
+                <h5 class="mt-3">Fallback Zone-Based Pricing (Optional - Used if Matrix API fails or for reference)</h5>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group mb-3">
+                            <label for="base_unit_zone_fallback">Base Unit for Zone Fallback (€)</label>
+                            <input type="number" step="0.01" class="form-control" id="base_unit_zone_fallback" name="base_unit_zone_fallback" value="{{ config.base_unit_zone_fallback if config and config.base_unit_zone_fallback is not none else \'\' }}">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group mb-3">
+                    <label for="zones_json">Zone Coefficients (JSON for Fallback)</label>
+                    <textarea class="form-control" id="zones_json" name="zones_json" rows="10">{{ config.zones_json if config and config.zones_json is not none else \'\' }}</textarea>
+                    <small class="form-text text-muted">Example: {"D1": {"origin": 1.3, "destination": 1.2}, ...}</small>
+                </div>
+
+                <div class="form-group mb-3">
+                    <label for="weights_zone_fallback_json">Zone Weights (JSON for Fallback)</label>
+                    <textarea class="form-control" id="weights_zone_fallback_json" name="weights_zone_fallback_json" rows="5">{{ config.weights_zone_fallback_json if config and config.weights_zone_fallback_json is not none else \'\' }}</textarea>
+                    <small class="form-text text-muted">Example: {"origin_zone": 0.25, "destination_zone": 0.25, ...}</small>
+                </div>
+
+                <button type="submit" class="btn btn-primary mt-3">Save Configuration</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block admin_scripts %}
+<script>
+    // Basic JSON validation feedback (optional, can be enhanced)
+    const textareas = document.querySelectorAll(\'textarea[name$=\"_json\"]\');
+    textareas.forEach(textarea => {
+        textarea.addEventListener(\'blur\', function() {
+            try {
+                JSON.parse(this.value);
+                this.classList.remove(\'is-invalid\');
+                this.classList.add(\'is-valid\');
+            } catch (e) {
+                this.classList.remove(\'is-valid\');
+                this.classList.add(\'is-invalid\');
+            }
+        });
+    });
+</script>
+{% endblock %}
+
