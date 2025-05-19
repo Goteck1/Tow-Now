@@ -13,9 +13,11 @@ import datetime
 # Import the new pricing logic function
 from pricing_logic import calculate_dynamic_price 
 
-app = Flask(__name__,
-            static_folder=os.path.join(os.path.dirname(__file__), 'static'),
-            template_folder=os.path.join(os.path.dirname(__file__), 'templates'))
+app = Flask(
+    __name__,
+    template_folder=os.path.join(os.path.dirname(__file__), 'templates'),
+    static_folder=os.path.join(os.path.dirname(__file__), 'static')
+)
 
 app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', 'a_very_secret_key_that_should_be_changed_in_production_v2_fixed')
 
