@@ -525,17 +525,17 @@ def dashboard():
     request_count = ServiceRequest.query.count()
     return render_template('admin/dashboard.html', user_count=user_count, request_count=request_count)
 
-@admin_bp.route('/manage_users')
+@admin_bp.route('admin/manage_users')
 @admin_required
 def manage_users():
     users = User.query.all()
-    return render_template('manage_users.html', users=users)
+    return render_template('admin/manage_users.html', users=users)
 
-@admin_bp.route('/manage_requests')
+@admin_bp.route('admin/manage_requests')
 @admin_required
 def manage_requests():
     service_requests = ServiceRequest.query.order_by(ServiceRequest.created_at.desc()).all()
-    return render_template('manage_requests.html', service_requests=service_requests)
+    return render_template('admin/manage_requests.html', service_requests=service_requests)
 
 @admin_bp.route('/manage_pricing', methods=['GET', 'POST'])
 @admin_required
