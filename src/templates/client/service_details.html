@@ -1,0 +1,241 @@
+{% extends "base.html" %}
+
+{% block title %}Detalles del Servicio - TowNow{% endblock %}
+
+{% block header_title %}Detalles del Servicio #{{ service_request.id }}{% endblock %}
+{% block header_subtitle %}Información completa sobre tu solicitud de servicio{% endblock %}
+
+{% block content %}
+<section class="container">
+    <div class="card">
+        <h2 class="card-header">Información del Servicio</h2>
+        <div class="card-body">
+            <div class="service-status">
+                <h3>Estado Actual</h3>
+                <div class="status-badge status-{{ service_request.status.lower().replace(' ', '-') }}">
+                    {{ service_request.status }}
+                </div>
+                <p class="status-timestamp">Última actualización: {{ service_request.updated_at.strftime('%d/%m/%Y %H:%M') }}</p>
+            </div>
+
+            <div class="service-details">
+                <h3>Detalles del Servicio</h3>
+                <div class="detail-row">
+                    <div class="detail-label">Origen:</div>
+                    <div class="detail-value">{{ service_request.current_location }}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Destino:</div>
+                    <div class="detail-value">{{ service_request.destination }}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Tipo de Vehículo:</div>
+                    <div class="detail-value">{{ service_request.vehicle_type }}</div>
+                </div>
+                {% if service_request.vehicle_other %}
+                <div class="detail-row">
+                    <div class="detail-label">Vehículo (Otro):</div>
+                    <div class="detail-value">{{ service_request.vehicle_other }}</div>
+                </div>
+                {% endif %}
+                {% if service_request.vehicle_details %}
+                <div class="detail-row">
+                    <div class="detail-label">Detalles del Vehículo:</div>
+                    <div class="detail-value">{{ service_request.vehicle_details }}</div>
+                </div>
+                {% endif %}
+                <div class="detail-row">
+                    <div class="detail-label">Precio:</div>
+                    <div class="detail-value">€{{ service_request.price }}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Fecha de Solicitud:</div>
+                    <div class="detail-value">{{ service_request.created_at.strftime('%d/%m/%Y %H:%M') }}</div>
+                </div>
+            </div>
+
+            {% if provider %}
+            <div class="provider-details">
+                <h3>Información del Proveedor</h3>
+                <div class="detail-row">
+                    <div class="detail-label">Nombre:</div>
+                    <div class="detail-value">{{ provider.fullname }}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Email:</div>
+                    <div class="detail-value">{{ provider.email }}</div>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if price_breakdown %}
+            <div class="price-breakdown">
+                <h3>Desglose del Precio</h3>
+                <div class="breakdown-details">
+                    {% if price_breakdown.base_fare is defined %}
+                    <div class="detail-row">
+                        <div class="detail-label">Tarifa Base:</div>
+                        <div class="detail-value">€{{ price_breakdown.base_fare }}</div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if price_breakdown.distance_fare is defined %}
+                    <div class="detail-row">
+                        <div class="detail-label">Tarifa por Distancia:</div>
+                        <div class="detail-value">€{{ price_breakdown.distance_fare }} ({{ price_breakdown.distance_km }} km)</div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if price_breakdown.time_fare is defined %}
+                    <div class="detail-row">
+                        <div class="detail-label">Tarifa por Tiempo:</div>
+                        <div class="detail-value">€{{ price_breakdown.time_fare }} ({{ price_breakdown.duration_minutes }} min)</div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if price_breakdown.vehicle_coefficient is defined %}
+                    <div class="detail-row">
+                        <div class="detail-label">Coeficiente de Vehículo:</div>
+                        <div class="detail-value">{{ price_breakdown.vehicle_coefficient }}</div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if price_breakdown.time_coefficient is defined %}
+                    <div class="detail-row">
+                        <div class="detail-label">Coeficiente de Horario:</div>
+                        <div class="detail-value">{{ price_breakdown.time_coefficient }}</div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if price_breakdown.traffic_coefficient is defined %}
+                    <div class="detail-row">
+                        <div class="detail-label">Coeficiente de Tráfico:</div>
+                        <div class="detail-value">{{ price_breakdown.traffic_coefficient }}</div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="service-actions">
+                <a href="{{ url_for('client_notifications_bp.client_notifications') }}" class="btn btn-secondary">Volver a Notificaciones</a>
+                {% if service_request.status == 'Pending Assignment' or service_request.status == 'Assigned' %}
+                <button class="btn btn-danger" onclick="confirmCancelService({{ service_request.id }})">Cancelar Servicio</button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function confirmCancelService(serviceId) {
+        if (confirm('¿Estás seguro de que deseas cancelar este servicio?')) {
+            // Aquí iría la lógica para cancelar el servicio
+            // Por ahora, solo mostramos un mensaje
+            alert('Funcionalidad de cancelación pendiente de implementar.');
+        }
+    }
+</script>
+{% endblock %}
+
+{% block styles %}
+<style>
+    .service-status {
+        margin-bottom: 2rem;
+        text-align: center;
+    }
+    
+    .status-badge {
+        display: inline-block;
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        font-size: 1.1rem;
+        font-weight: bold;
+        margin: 0.5rem 0;
+    }
+    
+    .status-timestamp {
+        font-size: 0.9rem;
+        color: #666;
+        margin-top: 0.5rem;
+    }
+    
+    .service-details, .provider-details, .price-breakdown {
+        margin-bottom: 2rem;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 1.5rem;
+        background-color: #f9f9f9;
+    }
+    
+    .service-details h3, .provider-details h3, .price-breakdown h3 {
+        margin-top: 0;
+        margin-bottom: 1rem;
+        border-bottom: 1px solid #e0e0e0;
+        padding-bottom: 0.5rem;
+    }
+    
+    .detail-row {
+        display: flex;
+        margin-bottom: 0.5rem;
+    }
+    
+    .detail-label {
+        flex: 0 0 30%;
+        font-weight: bold;
+    }
+    
+    .detail-value {
+        flex: 0 0 70%;
+    }
+    
+    .service-actions {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 2rem;
+    }
+    
+    /* Status colors (same as in notifications.html) */
+    .status-pending-assignment {
+        background-color: #ffc107;
+        color: #212529;
+    }
+    
+    .status-assigned {
+        background-color: #17a2b8;
+        color: white;
+    }
+    
+    .status-en-route {
+        background-color: #007bff;
+        color: white;
+    }
+    
+    .status-arrived {
+        background-color: #6f42c1;
+        color: white;
+    }
+    
+    .status-in-progress {
+        background-color: #fd7e14;
+        color: white;
+    }
+    
+    .status-completed {
+        background-color: #28a745;
+        color: white;
+    }
+    
+    .status-cancelled {
+        background-color: #dc3545;
+        color: white;
+    }
+    
+    .status-no-provider-available {
+        background-color: #6c757d;
+        color: white;
+    }
+</style>
+{% endblock %}
