@@ -1,8 +1,5 @@
 import datetime
-from flask import current_app
-
-# Accede al db que definiste en app.config en main.py
-db = current_app.config.get('db')
+from src.main import db
 
 class Notification(db.Model):
     """
