@@ -28,13 +28,15 @@
                 {% if current_user and current_user.is_authenticated %}
                     {% if current_user.user_type == 'provider' %}
                         <li><a href="{{ url_for('main.service_provider_home') }}" class="{% if request.endpoint == 'main.service_provider_home' %}active{% endif %}">Provider Home</a></li>
-                    {% else %}
+                    {% elif current_user.user_type == 'customer' %}
                         <li><a href="{{ url_for('main.user_home') }}" class="{% if request.endpoint == 'main.user_home' %}active{% endif %}">My Account</a></li>
+                        <li><a href="{{ url_for('client_notifications_bp.client_notifications') }}" class="{% if request.endpoint == 'client_notifications_bp.client_notifications' %}active{% endif %}">Mis Notificaciones</a></li>
                     {% endif %}
                     <li><a href="{{ url_for('main.logout') }}">Logout</a></li>
                 {% else %}
                     <li><a href="{{ url_for('main.signup') }}" class="{% if request.endpoint == 'main.signup' %}active{% endif %}">Sign Up</a></li>
                 {% endif %}
+
             </ul>
         </div>
     </nav>
