@@ -13,6 +13,11 @@ import datetime
 # Import the new pricing logic function
 from pricing_logic import calculate_dynamic_price 
 
+# Importar blueprints de asignación de servicios
+from routes.service_assignment import service_assignment_bp
+from routes.client_notifications import client_notifications_bp
+from models.notification import Notification
+
 app = Flask(
     __name__,
     template_folder=os.path.join(os.path.dirname(__file__), 'templates'),
@@ -473,6 +478,19 @@ def submit_service_request():
     db.session.add(new_request)
     db.session.commit()
 
+    # Iniciar proceso de asignación
+    from utils.service_assignment import find_matching_providers, send_service_alerts
+    
+    matching_providers = find_matching_providers(new_request, db, User)
+    
+    if matching_providers:
+        notifications_sent = send_service_alerts(new_request, matching_providers, db, Notification, current_pricing_config)
+        app.logger.info(f"Solicitud {new_request.id}: {notifications_sent} proveedores notificados.")
+    else:
+        new_request.status = 'No Provider Available'
+        db.session.commit()
+        app.logger.warning(f"Solicitud {new_request.id}: No hay proveedores disponibles que coincidan.")
+
     # Placeholder: Trigger alert logic here in the future
     # For now, simulate payment and assignment for testing flow
     # new_request.status = 'Paid' 
@@ -610,9 +628,18 @@ def manage_pricing():
 
     return render_template('admin/manage_pricing.html', config=config)
 
+# Configurar dependencias para los blueprints de asignación de servicios
+app.config['db'] = db
+app.config['User'] = User
+app.config['ServiceRequest'] = ServiceRequest
+app.config['PricingConfig'] = PricingConfig
+
+
 # Register Blueprints
 app.register_blueprint(main_bp)
 app.register_blueprint(admin_bp)
+app.register_blueprint(service_assignment_bp, url_prefix='/service')
+app.register_blueprint(client_notifications_bp, url_prefix='/client')
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
