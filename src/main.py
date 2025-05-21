@@ -217,7 +217,7 @@ from flask import Blueprint
 main_bp = Blueprint('main', __name__)
 
 # Import admin blueprint
-from routes.admin import admin_bp
+from routes import admin_bp
 
 # Import service assignment and client notifications blueprints
 from routes.service_assignment import service_assignment_bp
