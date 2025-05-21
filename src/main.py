@@ -1,29 +1,26 @@
 import os
 import sys
-import json # Added for JSON operations
-# DON\"T CHANGE THIS !!!
+import json
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from flask import Flask, send_from_directory, render_template, request, redirect, url_for, flash, jsonify
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, send_from_directory, Blueprint
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import LoginManager, UserMixin, login_user, logout_user, current_user, login_required
-import datetime 
+import datetime
 
+# --- App and DB Setup ---
 app = Flask(
     __name__,
     template_folder=os.path.join(os.path.dirname(__file__), 'templates'),
     static_folder=os.path.join(os.path.dirname(__file__), 'static')
 )
-
 app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', 'a_very_secret_key_that_should_be_changed_in_production_v2_fixed')
-
-# Database Configuration
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', "postgresql://townow_db_user:JYglVB26lGurbXdGemaj3EgkillpKV0N@dpg-d0hgfb3uibrs739ni9tg-a/townow_db")
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
-# LoginManager initialization
+# --- Login Manager ---
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'main.signin'
@@ -38,12 +35,11 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(100), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
     user_type = db.Column(db.String(20), nullable=False, default='customer') # 'customer', 'provider', 'admin'
-    is_admin = db.Column(db.Boolean, default=False) 
-
-    # Provider-specific fields (nullable if user is not a provider)
-    service_zones_json = db.Column(db.Text, nullable=True) # JSON string for list of zones, e.g., ["D1", "D2", "Lucan"]
-    accepted_vehicle_types_json = db.Column(db.Text, nullable=True) # JSON string for list of vehicle types, e.g., ["sedan", "suv"]
-    is_available = db.Column(db.Boolean, nullable=True, default=True) # Provider availability status
+    is_admin = db.Column(db.Boolean, default=False)
+    # Provider-specific fields
+    service_zones_json = db.Column(db.Text, nullable=True)
+    accepted_vehicle_types_json = db.Column(db.Text, nullable=True)
+    is_available = db.Column(db.Boolean, nullable=True, default=True)
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -76,19 +72,19 @@ class User(UserMixin, db.Model):
 class ServiceRequest(db.Model):
     __tablename__ = 'service_requests'
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True) 
-    guest_name = db.Column(db.String(100), nullable=True) 
-    guest_phone = db.Column(db.String(20), nullable=True)  
-    current_location = db.Column(db.String(255), nullable=False) 
-    current_location_zone = db.Column(db.String(50), nullable=True) 
-    destination = db.Column(db.String(255), nullable=False) 
-    destination_zone = db.Column(db.String(50), nullable=True) 
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    guest_name = db.Column(db.String(100), nullable=True)
+    guest_phone = db.Column(db.String(20), nullable=True)
+    current_location = db.Column(db.String(255), nullable=False)
+    current_location_zone = db.Column(db.String(50), nullable=True)
+    destination = db.Column(db.String(255), nullable=False)
+    destination_zone = db.Column(db.String(50), nullable=True)
     vehicle_type = db.Column(db.String(50), nullable=False)
     vehicle_other = db.Column(db.String(100))
     vehicle_details = db.Column(db.String(255))
-    status = db.Column(db.String(50), default='Pending Payment') 
-    price = db.Column(db.Float) 
-    price_breakdown_json = db.Column(db.Text, nullable=True) 
+    status = db.Column(db.String(50), default='Pending Payment')
+    price = db.Column(db.Float)
+    price_breakdown_json = db.Column(db.Text, nullable=True)
     provider_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
@@ -98,18 +94,17 @@ class ServiceRequest(db.Model):
 
 class PricingConfig(db.Model):
     __tablename__ = 'pricing_config'
-    id = db.Column(db.Integer, primary_key=True) # Should only ever be one row, id=1
+    id = db.Column(db.Integer, primary_key=True)
     fixed_base_fare = db.Column(db.Float, nullable=False, default=10.0)
     fare_per_km = db.Column(db.Float, nullable=False, default=1.2)
     fare_per_minute = db.Column(db.Float, nullable=False, default=0.3)
-    vehicle_types_json = db.Column(db.Text, nullable=False) 
-    time_coefficients_json = db.Column(db.Text, nullable=False) 
+    vehicle_types_json = db.Column(db.Text, nullable=False)
+    time_coefficients_json = db.Column(db.Text, nullable=False)
     traffic_coefficient = db.Column(db.Float, nullable=False, default=1.3)
-    admin_commission_percentage = db.Column(db.Float, nullable=False, default=0.25) # e.g., 0.25 for 25%
-    # Fallback zone-based pricing (can be deprecated or kept)
+    admin_commission_percentage = db.Column(db.Float, nullable=False, default=0.25)
     base_unit_zone_fallback = db.Column(db.Float, nullable=True, default=50.0)
-    zones_json = db.Column(db.Text, nullable=True) 
-    weights_zone_fallback_json = db.Column(db.Text, nullable=True) 
+    zones_json = db.Column(db.Text, nullable=True)
+    weights_zone_fallback_json = db.Column(db.Text, nullable=True)
     updated_at = db.Column(db.DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
 
     def default_vehicle_types(self):
@@ -157,30 +152,30 @@ class PricingConfig(db.Model):
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-# Initialize Notification model
+# --- Notification model ---
 from models.notification import init_notification_model
 Notification = init_notification_model(db)
 
-# --- Database Initialization Function ---
+# --- Database Initialization ---
 def initialize_database():
     with app.app_context():
-        db.create_all() 
-        # Initialize Admin User
+        db.create_all()
+        # Default admin
         if not User.query.filter_by(email='admin@townow.local').first():
             admin_user = User(fullname='Admin User', email='admin@townow.local', user_type='admin', is_admin=True)
-            admin_user.set_password('adminpass') 
+            admin_user.set_password('adminpass')
             db.session.add(admin_user)
             print("Default admin user created.")
 
-        # Initialize Pricing Configuration if it doesn't exist
+        # Default pricing config
         if not PricingConfig.query.first():
             default_config = PricingConfig(
                 fixed_base_fare=10.0,
                 fare_per_km=1.2,
                 fare_per_minute=0.3,
                 traffic_coefficient=1.3,
-                admin_commission_percentage=0.25, # Default commission
-                base_unit_zone_fallback=50.0 
+                admin_commission_percentage=0.25,
+                base_unit_zone_fallback=50.0
             )
             default_config.vehicle_types_json = default_config.default_vehicle_types()
             default_config.time_coefficients_json = default_config.default_time_coefficients()
@@ -188,80 +183,40 @@ def initialize_database():
             default_config.weights_zone_fallback_json = default_config.default_weights_zone_fallback()
             db.session.add(default_config)
             print("Default pricing configuration initialized.")
-        
-        db.session.commit()
 
+        db.session.commit()
 initialize_database()
 
-# --- Helper Function for Provider Profit ---
+# --- Helper Function ---
 def calculate_provider_profit(total_price, admin_commission_percentage):
     if admin_commission_percentage < 0 or admin_commission_percentage > 1:
-        # Invalid commission, perhaps log an error or use a default
-        # For now, assume commission is valid if it reaches here from DB
-        pass 
+        pass
     provider_share = 1 - admin_commission_percentage
     return round(total_price * provider_share, 2)
 
-# Import the pricing logic function
+# --- Pricing logic ---
 from pricing_logic import calculate_dynamic_price
 
-# Configure app for blueprints
 app.config['db'] = db
 app.config['User'] = User
 app.config['ServiceRequest'] = ServiceRequest
 app.config['PricingConfig'] = PricingConfig
 app.config['Notification'] = Notification
 
-# --- Routes (Blueprint 'main' for modularity) ---
-from flask import Blueprint
+# --- Main Blueprint (UNIFICADO) ---
 main_bp = Blueprint('main', __name__)
-
-# Import admin blueprint
-from routes.admin import admin_bp
-
-# Import service assignment and client notifications blueprints
-from routes.service_assignment import service_assignment_bp
-from routes.client_notifications import client_notifications_bp
 
 @main_bp.route('/')
 def home():
     return render_template('home.html')
 
-@main_bp.route('/calculate_price', methods=['GET'])
-def get_price_estimate():
-    try:
-        origin_lng = request.args.get('origin_lng', type=float)
-        origin_lat = request.args.get('origin_lat', type=float)
-        dest_lng = request.args.get('dest_lng', type=float)
-        dest_lat = request.args.get('dest_lat', type=float)
-        vehicle_type = request.args.get('vehicle_type')
+@main_bp.route('/contact')
+def contact():
+    return render_template('contact.html')
 
-        if not all([origin_lng, origin_lat, dest_lng, dest_lat, vehicle_type]):
-            return jsonify({"error": "Missing required parameters: origin_lng, origin_lat, dest_lng, dest_lat, vehicle_type"}), 400
-        
-        origin_coords = (origin_lng, origin_lat)
-        destination_coords = (dest_lng, dest_lat)
-        
-        current_pricing_config = PricingConfig.query.first()
-        if not current_pricing_config:
-            return jsonify({"error": "Pricing configuration not found in database."}), 500
-
-        price_details = calculate_dynamic_price(origin_coords, destination_coords, vehicle_type, current_pricing_config)
-        
-        # Add provider profit to the response if price calculation was successful
-        if price_details.get("price") and not price_details.get("error"):
-            price_details["provider_profit_estimate"] = calculate_provider_profit(
-                price_details["price"],
-                current_pricing_config.admin_commission_percentage
-            )
-            price_details["admin_commission_percentage"] = current_pricing_config.admin_commission_percentage
-
-        return jsonify(price_details)
-    except ValueError:
-         return jsonify({"error": "Invalid coordinate format. Longitude and latitude must be numbers."}), 400
-    except Exception as e:
-        app.logger.error(f"Error calculating price: {e}")
-        return jsonify({"error": "Could not calculate price", "details": str(e)}), 500
+@main_bp.route('/qa')
+def qa():
+    return render_template('qa.html')
 
 @main_bp.route('/signup', methods=['GET', 'POST'])
 def signup():
@@ -277,24 +232,19 @@ def signup():
         if not all([fullname, email, password, confirm_password, user_type]):
             flash('All fields are required.', 'danger')
             return redirect(url_for('main.signup'))
-
         if password != confirm_password:
             flash('Passwords do not match.', 'danger')
             return redirect(url_for('main.signup'))
-
         existing_user = User.query.filter_by(email=email).first()
         if existing_user:
             flash('Email address is already registered.', 'warning')
             return redirect(url_for('main.signup'))
-
         new_user = User(fullname=fullname, email=email, user_type=user_type)
         new_user.set_password(password)
-        # Set default empty JSON for provider specific fields if user_type is provider
         if user_type == 'provider':
             new_user.service_zones_json = json.dumps([])
             new_user.accepted_vehicle_types_json = json.dumps([])
-            new_user.is_available = True # Default to available
-
+            new_user.is_available = True
         db.session.add(new_user)
         db.session.commit()
         flash('Account created successfully. You can now sign in.', 'success')
@@ -307,10 +257,9 @@ def signin():
         if current_user.user_type == 'provider' and not current_user.is_admin:
             return redirect(url_for('main.service_provider_home'))
         elif current_user.is_admin:
-             return redirect(url_for('admin_bp.dashboard'))
-        else: 
+            return redirect(url_for('admin_bp.dashboard'))
+        else:
             return redirect(url_for('main.user_home'))
-            
     if request.method == 'POST':
         email = request.form.get('email')
         password = request.form.get('password')
@@ -349,47 +298,35 @@ def provider_profile():
     if current_user.user_type != 'provider' or current_user.is_admin:
         flash('Unauthorized access.', 'danger')
         return redirect(url_for('main.home'))
-    
-    # Get all available zones from pricing config
     pricing_config = PricingConfig.query.first()
     all_zones = []
     all_vehicle_types = {}
-    
     if pricing_config:
         try:
             zones_data = json.loads(pricing_config.zones_json)
             all_zones = list(zones_data.keys())
-            
             vehicle_types_data = json.loads(pricing_config.vehicle_types_json)
             all_vehicle_types = vehicle_types_data
         except (json.JSONDecodeError, AttributeError):
             pass
-    
     if request.method == 'POST':
-        # Get form data
         selected_zones = request.form.getlist('service_zones')
         selected_vehicle_types = request.form.getlist('vehicle_types')
         is_available = 'is_available' in request.form
-        
-        # Update provider profile
         current_user.set_service_zones(selected_zones)
         current_user.set_accepted_vehicle_types(selected_vehicle_types)
         current_user.is_available = is_available
-        
         db.session.commit()
         flash('Provider profile updated successfully!', 'success')
         return redirect(url_for('main.provider_profile'))
-    
-    # Get current provider settings
     provider_zones = current_user.get_service_zones()
     provider_vehicle_types = current_user.get_accepted_vehicle_types()
-    
-    return render_template('provider_profile.html', 
-                          provider=current_user,
-                          all_zones=all_zones,
-                          provider_zones=provider_zones,
-                          all_vehicle_types=all_vehicle_types,
-                          provider_vehicle_types=provider_vehicle_types)
+    return render_template('provider_profile.html',
+        provider=current_user,
+        all_zones=all_zones,
+        provider_zones=provider_zones,
+        all_vehicle_types=all_vehicle_types,
+        provider_vehicle_types=provider_vehicle_types)
 
 @main_bp.route('/service_provider_home')
 @login_required
@@ -407,12 +344,9 @@ def service_request():
 @main_bp.route('/submit_service_request', methods=['POST'])
 def submit_service_request():
     is_guest_checkout = 'guest_checkout' in request.form
-    
-    # Set user_id for registered users, or guest info for guest checkout
     user_id = None
     guest_name_form = None
     guest_phone_form = None
-    
     if not is_guest_checkout:
         if not current_user.is_authenticated:
             flash('Please sign in or continue as guest to request a service.', 'warning')
@@ -428,12 +362,11 @@ def submit_service_request():
             flash('Guest name and phone are required for guest checkout.', 'danger')
             return redirect(url_for('main.service_request', guest="True"))
 
-    current_location_full = request.form.get('current_location_address') 
-    destination_full = request.form.get('destination_address') 
+    current_location_full = request.form.get('current_location_address')
+    destination_full = request.form.get('destination_address')
     vehicle_type = request.form.get('vehicle_type')
     vehicle_other = request.form.get('vehicle_other') if vehicle_type == 'other' else None
     vehicle_details = request.form.get('vehicle_details')
-    
     try:
         origin_lng = float(request.form.get('current_location_lng'))
         origin_lat = float(request.form.get('current_location_lat'))
@@ -443,72 +376,58 @@ def submit_service_request():
         flash('Invalid location coordinates. Please re-select locations.', 'danger')
         redirect_url = url_for('main.service_request', guest="True") if is_guest_checkout else url_for('main.service_request')
         return redirect(redirect_url)
-
     current_location_zone_form = request.form.get('current_location_zone', 'Outside')
     destination_zone_form = request.form.get('destination_zone', 'Outside')
-
     if not all([current_location_full, destination_full, vehicle_type, origin_lng, origin_lat, dest_lng, dest_lat]):
         flash('Please complete all required fields (locations, vehicle type, and ensure coordinates are set).', 'danger')
         redirect_url = url_for('main.service_request', guest="True") if is_guest_checkout else url_for('main.service_request')
         return redirect(redirect_url)
-
     origin_coords = (origin_lng, origin_lat)
     destination_coords = (dest_lng, dest_lat)
-
     try:
         current_pricing_config = PricingConfig.query.first()
         if not current_pricing_config:
             return jsonify({"error": "Pricing configuration not found in database at submission."}), 500
-            
         price_data = calculate_dynamic_price(origin_coords, destination_coords, vehicle_type, current_pricing_config)
         if price_data.get("error"):
             app.logger.error(f"Error from pricing logic: {price_data.get('error')} - Breakdown: {price_data.get('breakdown')}")
             flash(f"Error calculating service price: {price_data.get('error')}. Please try again or contact support.", 'danger')
             redirect_url = url_for('main.service_request', guest="True") if is_guest_checkout else url_for('main.service_request')
             return redirect(redirect_url)
-        
         estimated_price = price_data['price']
-        price_breakdown_str = json.dumps(price_data['breakdown']) 
+        price_breakdown_str = json.dumps(price_data['breakdown'])
     except Exception as e:
         app.logger.error(f"Error calculating price during submission: {e}")
         flash('Error calculating service price. Please try again or contact support.', 'danger')
         redirect_url = url_for('main.service_request', guest="True") if is_guest_checkout else url_for('main.service_request')
         return redirect(redirect_url)
-
     new_request = ServiceRequest(
         user_id=user_id,
         guest_name=guest_name_form,
         guest_phone=guest_phone_form,
         current_location=current_location_full,
-        current_location_zone=current_location_zone_form, 
+        current_location_zone=current_location_zone_form,
         destination=destination_full,
-        destination_zone=destination_zone_form, 
+        destination_zone=destination_zone_form,
         vehicle_type=vehicle_type,
         vehicle_other=vehicle_other,
         vehicle_details=vehicle_details,
         price=estimated_price,
         price_breakdown_json=price_breakdown_str,
-        status='Pending Assignment' # New initial status
+        status='Pending Assignment'
     )
     db.session.add(new_request)
     db.session.commit()
-
     # Iniciar proceso de asignación
     from utils.service_assignment import find_matching_providers, send_service_alerts
-
-    # Buscar proveedores coincidentes
     matching_providers = find_matching_providers(new_request, db, User)
-
     if matching_providers:
-        # Enviar alertas a proveedores coincidentes
         notifications_sent = send_service_alerts(new_request, matching_providers, db, Notification, current_pricing_config)
         app.logger.info(f"Solicitud {new_request.id}: {notifications_sent} proveedores notificados.")
     else:
-        # No hay proveedores coincidentes
         new_request.status = 'No Provider Available'
         db.session.commit()
         app.logger.warning(f"Solicitud {new_request.id}: No hay proveedores disponibles que coincidan.")
-
     if is_guest_checkout:
         flash(f'Guest request received (ID: {new_request.id}). Price: €{estimated_price:.2f}. Status: {new_request.status}. We will contact you at {guest_phone_form}. Searching for providers...', 'success')
         return redirect(url_for('main.home')) 
@@ -522,14 +441,43 @@ def service_provider_dashboard():
     if current_user.user_type != 'provider' or current_user.is_admin:
         flash('Unauthorized access.', 'danger')
         return redirect(url_for('main.home'))
-    active_requests_data = [] 
+    active_requests_data = []
     return render_template('service_provider_dashboard.html', active_requests=active_requests_data, provider=current_user)
 
-@main_bp.route('/qa')
-def qa():
-    return render_template('qa.html')
+@main_bp.route('/calculate_price', methods=['GET'])
+def get_price_estimate():
+    try:
+        origin_lng = request.args.get('origin_lng', type=float)
+        origin_lat = request.args.get('origin_lat', type=float)
+        dest_lng = request.args.get('dest_lng', type=float)
+        dest_lat = request.args.get('dest_lat', type=float)
+        vehicle_type = request.args.get('vehicle_type')
+        if not all([origin_lng, origin_lat, dest_lng, dest_lat, vehicle_type]):
+            return jsonify({"error": "Missing required parameters: origin_lng, origin_lat, dest_lng, dest_lat, vehicle_type"}), 400
+        origin_coords = (origin_lng, origin_lat)
+        destination_coords = (dest_lng, dest_lat)
+        current_pricing_config = PricingConfig.query.first()
+        if not current_pricing_config:
+            return jsonify({"error": "Pricing configuration not found in database."}), 500
+        price_details = calculate_dynamic_price(origin_coords, destination_coords, vehicle_type, current_pricing_config)
+        if price_details.get("price") and not price_details.get("error"):
+            price_details["provider_profit_estimate"] = calculate_provider_profit(
+                price_details["price"],
+                current_pricing_config.admin_commission_percentage
+            )
+            price_details["admin_commission_percentage"] = current_pricing_config.admin_commission_percentage
+        return jsonify(price_details)
+    except ValueError:
+        return jsonify({"error": "Invalid coordinate format. Longitude and latitude must be numbers."}), 400
+    except Exception as e:
+        app.logger.error(f"Error calculating price: {e}")
+        return jsonify({"error": "Could not calculate price", "details": str(e)}), 500
 
-# Register Blueprints
+# --- Register Blueprints ---
+from routes.admin import admin_bp
+from routes.service_assignment import service_assignment_bp
+from routes.client_notifications import client_notifications_bp
+
 app.register_blueprint(main_bp)
 app.register_blueprint(admin_bp)
 app.register_blueprint(service_assignment_bp, url_prefix='/service')
