@@ -10,14 +10,6 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import LoginManager, UserMixin, login_user, logout_user, current_user, login_required
 import datetime 
 
-# Import the new pricing logic function
-from pricing_logic import calculate_dynamic_price 
-
-# Importar blueprints de asignación de servicios
-from routes.service_assignment import service_assignment_bp
-from routes.client_notifications import client_notifications_bp
-from models.notification import Notification
-
 app = Flask(
     __name__,
     template_folder=os.path.join(os.path.dirname(__file__), 'templates'),
@@ -165,6 +157,10 @@ class PricingConfig(db.Model):
 def load_user(user_id):
     return User.query.get(int(user_id))
 
+# Initialize Notification model
+from models.notification import init_notification_model
+Notification = init_notification_model(db)
+
 # --- Database Initialization Function ---
 def initialize_database():
     with app.app_context():
@@ -206,9 +202,26 @@ def calculate_provider_profit(total_price, admin_commission_percentage):
     provider_share = 1 - admin_commission_percentage
     return round(total_price * provider_share, 2)
 
+# Import the pricing logic function
+from pricing_logic import calculate_dynamic_price
+
+# Configure app for blueprints
+app.config['db'] = db
+app.config['User'] = User
+app.config['ServiceRequest'] = ServiceRequest
+app.config['PricingConfig'] = PricingConfig
+app.config['Notification'] = Notification
+
 # --- Routes (Blueprint 'main' for modularity) ---
 from flask import Blueprint
 main_bp = Blueprint('main', __name__)
+
+# Import admin blueprint
+from routes.admin import admin_bp
+
+# Import service assignment and client notifications blueprints
+from routes.service_assignment import service_assignment_bp
+from routes.client_notifications import client_notifications_bp
 
 @main_bp.route('/')
 def home():
@@ -330,44 +343,53 @@ def user_home():
         return redirect(url_for('main.home'))
     return render_template('user_home.html', user=current_user)
 
-# Placeholder for Provider Profile Page - to be developed
 @main_bp.route('/provider_profile', methods=['GET', 'POST'])
 @login_required
 def provider_profile():
     if current_user.user_type != 'provider' or current_user.is_admin:
         flash('Unauthorized access.', 'danger')
         return redirect(url_for('main.home'))
-
+    
+    # Get all available zones from pricing config
+    pricing_config = PricingConfig.query.first()
+    all_zones = []
+    all_vehicle_types = {}
+    
+    if pricing_config:
+        try:
+            zones_data = json.loads(pricing_config.zones_json)
+            all_zones = list(zones_data.keys())
+            
+            vehicle_types_data = json.loads(pricing_config.vehicle_types_json)
+            all_vehicle_types = vehicle_types_data
+        except (json.JSONDecodeError, AttributeError):
+            pass
+    
     if request.method == 'POST':
-        current_user.is_available = request.form.get('is_available') == 'on'
+        # Get form data
+        selected_zones = request.form.getlist('service_zones')
+        selected_vehicle_types = request.form.getlist('vehicle_types')
+        is_available = 'is_available' in request.form
         
-        service_zones_str = request.form.get('service_zones', '')
-        try:
-            # Basic validation: split by comma, strip whitespace, filter empty
-            zones_list = [zone.strip() for zone in service_zones_str.split(',') if zone.strip()]
-            current_user.set_service_zones(zones_list)
-        except Exception as e:
-            flash(f'Error processing service zones: {e}', 'danger')
-
-        accepted_vehicles_str = request.form.get('accepted_vehicle_types', '')
-        try:
-            vehicles_list = [v.strip() for v in accepted_vehicles_str.split(',') if v.strip()]
-            current_user.set_accepted_vehicle_types(vehicles_list)
-        except Exception as e:
-            flash(f'Error processing accepted vehicle types: {e}', 'danger')
+        # Update provider profile
+        current_user.set_service_zones(selected_zones)
+        current_user.set_accepted_vehicle_types(selected_vehicle_types)
+        current_user.is_available = is_available
         
         db.session.commit()
-        flash('Profile updated successfully!', 'success')
+        flash('Provider profile updated successfully!', 'success')
         return redirect(url_for('main.provider_profile'))
-
-    # Prepare data for the form
-    current_zones_str = ", ".join(current_user.get_service_zones())
-    current_vehicles_str = ", ".join(current_user.get_accepted_vehicle_types())
-
+    
+    # Get current provider settings
+    provider_zones = current_user.get_service_zones()
+    provider_vehicle_types = current_user.get_accepted_vehicle_types()
+    
     return render_template('provider_profile.html', 
-                           provider=current_user, 
-                           current_zones_str=current_zones_str,
-                           current_vehicles_str=current_vehicles_str)
+                          provider=current_user,
+                          all_zones=all_zones,
+                          provider_zones=provider_zones,
+                          all_vehicle_types=all_vehicle_types,
+                          provider_vehicle_types=provider_vehicle_types)
 
 @main_bp.route('/service_provider_home')
 @login_required
@@ -379,30 +401,23 @@ def service_provider_home():
 
 @main_bp.route('/service_request', methods=['GET'])
 def service_request():
-    is_guest_request = request.args.get("guest") == "True"
-    
-    if not is_guest_request and not current_user.is_authenticated:
-        flash("Please sign in to request a service or continue as a guest.", "info")
-        return redirect(url_for('main.signin', next=url_for('main.service_request')))
-
-    if current_user.is_authenticated and current_user.user_type == 'provider' and not current_user.is_admin:
-        flash('Service providers cannot request services.', 'warning')
-        return redirect(url_for('main.service_provider_home'))
-    
-    return render_template('service_request.html', guest_mode=is_guest_request)
+    is_guest = request.args.get('guest') == 'True'
+    return render_template('service_request.html', guest=is_guest)
 
 @main_bp.route('/submit_service_request', methods=['POST'])
 def submit_service_request():
-    is_guest_checkout = request.form.get("guest_checkout") == "true"
+    is_guest_checkout = 'guest_checkout' in request.form
+    
+    # Set user_id for registered users, or guest info for guest checkout
     user_id = None
     guest_name_form = None
     guest_phone_form = None
-
+    
     if not is_guest_checkout:
         if not current_user.is_authenticated:
-            flash("Authentication required. Please sign in or use guest option.", "danger")
-            return redirect(url_for('main.signin', next=url_for('main.service_request')))
-        if current_user.user_type == 'provider' and not current_user.is_admin:
+            flash('Please sign in or continue as guest to request a service.', 'warning')
+            return redirect(url_for('main.service_request'))
+        if current_user.user_type == 'provider':
             flash('Service providers cannot request services.', 'warning')
             return redirect(url_for('main.service_provider_home'))
         user_id = current_user.id
@@ -480,21 +495,19 @@ def submit_service_request():
 
     # Iniciar proceso de asignación
     from utils.service_assignment import find_matching_providers, send_service_alerts
-    
+
+    # Buscar proveedores coincidentes
     matching_providers = find_matching_providers(new_request, db, User)
-    
+
     if matching_providers:
+        # Enviar alertas a proveedores coincidentes
         notifications_sent = send_service_alerts(new_request, matching_providers, db, Notification, current_pricing_config)
         app.logger.info(f"Solicitud {new_request.id}: {notifications_sent} proveedores notificados.")
     else:
+        # No hay proveedores coincidentes
         new_request.status = 'No Provider Available'
         db.session.commit()
         app.logger.warning(f"Solicitud {new_request.id}: No hay proveedores disponibles que coincidan.")
-
-    # Placeholder: Trigger alert logic here in the future
-    # For now, simulate payment and assignment for testing flow
-    # new_request.status = 'Paid' 
-    # db.session.commit()
 
     if is_guest_checkout:
         flash(f'Guest request received (ID: {new_request.id}). Price: €{estimated_price:.2f}. Status: {new_request.status}. We will contact you at {guest_phone_form}. Searching for providers...', 'success')
@@ -516,125 +529,6 @@ def service_provider_dashboard():
 def qa():
     return render_template('qa.html')
 
-@main_bp.route('/contact', methods=['GET', 'POST'])
-def contact():
-    if request.method == 'POST':
-        flash('Thank you for your message. We will get back to you soon.', 'success')
-        return redirect(url_for('main.contact'))
-    return render_template('contact.html')
-
-# --- Admin Panel Blueprint ---
-admin_bp = Blueprint('admin_bp', __name__, url_prefix='/admin', template_folder='admin')
-
-from functools import wraps
-def admin_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if not current_user.is_authenticated or not current_user.is_admin:
-            flash("You do not have permission to access the admin panel.", "danger")
-            return redirect(url_for('main.signin', next=request.url))
-        return f(*args, **kwargs)
-    return decorated_function
-
-@admin_bp.route('admin/dashboard')
-@admin_required
-def dashboard():
-    user_count = User.query.count()
-    request_count = ServiceRequest.query.count()
-    return render_template('admin/dashboard.html', user_count=user_count, request_count=request_count)
-
-@admin_bp.route('admin/manage_users')
-@admin_required
-def manage_users():
-    users = User.query.all()
-    return render_template('admin/manage_users.html', users=users)
-
-@admin_bp.route('admin/manage_requests')
-@admin_required
-def manage_requests():
-    service_requests = ServiceRequest.query.order_by(ServiceRequest.created_at.desc()).all()
-    return render_template('admin/manage_requests.html', service_requests=service_requests)
-
-@admin_bp.route('/manage_pricing', methods=['GET', 'POST'])
-@admin_required
-def manage_pricing():
-    config = PricingConfig.query.first()
-    if not config: # Should be created by initialize_database
-        flash('Pricing configuration not found. Please restart the application or check logs.', 'danger')
-        return redirect(url_for('admin_bp.dashboard'))
-
-    if request.method == 'POST':
-        try:
-            config.fixed_base_fare = float(request.form['fixed_base_fare'])
-            config.fare_per_km = float(request.form['fare_per_km'])
-            config.fare_per_minute = float(request.form['fare_per_minute'])
-            config.traffic_coefficient = float(request.form['traffic_coefficient'])
-            config.admin_commission_percentage = float(request.form['admin_commission_percentage'])
-            
-            # Validate commission is between 0 and 1
-            if not (0 <= config.admin_commission_percentage <= 1):
-                flash('Admin commission percentage must be between 0 (0%) and 1 (100%).', 'danger')
-                return render_template('admin/manage_pricing.html', config=config)
-
-            # Validate JSON fields
-            try:
-                json.loads(request.form['vehicle_types_json'])
-                config.vehicle_types_json = request.form['vehicle_types_json']
-            except json.JSONDecodeError:
-                flash('Invalid JSON format for Vehicle Type Coefficients.', 'danger')
-                return render_template('admin/manage_pricing.html', config=config)
-            
-            try:
-                json.loads(request.form['time_coefficients_json'])
-                config.time_coefficients_json = request.form['time_coefficients_json']
-            except json.JSONDecodeError:
-                flash('Invalid JSON format for Time Coefficients.', 'danger')
-                return render_template('admin/manage_pricing.html', config=config)
-
-            # Optional fallback fields
-            if request.form.get('base_unit_zone_fallback'):
-                config.base_unit_zone_fallback = float(request.form['base_unit_zone_fallback'])
-            else:
-                config.base_unit_zone_fallback = None # Or a default if preferred
-            
-            if request.form.get('zones_json'):
-                try:
-                    json.loads(request.form['zones_json'])
-                    config.zones_json = request.form['zones_json']
-                except json.JSONDecodeError:
-                    flash('Invalid JSON format for Zone Coefficients (Fallback).', 'danger')
-                    return render_template('admin/manage_pricing.html', config=config)
-            else:
-                config.zones_json = None
-
-            if request.form.get('weights_zone_fallback_json'):
-                try:
-                    json.loads(request.form['weights_zone_fallback_json'])
-                    config.weights_zone_fallback_json = request.form['weights_zone_fallback_json']
-                except json.JSONDecodeError:
-                    flash('Invalid JSON format for Zone Weights (Fallback).', 'danger')
-                    return render_template('admin/manage_pricing.html', config=config)
-            else:
-                config.weights_zone_fallback_json = None
-
-            db.session.commit()
-            flash('Pricing configuration updated successfully!', 'success')
-        except ValueError:
-            flash('Invalid input for one or more numeric fields.', 'danger')
-        except Exception as e:
-            flash(f'An error occurred: {str(e)}', 'danger')
-            db.session.rollback() # Rollback in case of other errors
-        return redirect(url_for('admin_bp.manage_pricing'))
-
-    return render_template('admin/manage_pricing.html', config=config)
-
-# Configurar dependencias para los blueprints de asignación de servicios
-app.config['db'] = db
-app.config['User'] = User
-app.config['ServiceRequest'] = ServiceRequest
-app.config['PricingConfig'] = PricingConfig
-
-
 # Register Blueprints
 app.register_blueprint(main_bp)
 app.register_blueprint(admin_bp)
@@ -643,4 +537,3 @@ app.register_blueprint(client_notifications_bp, url_prefix='/client')
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
-
