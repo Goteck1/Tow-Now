@@ -478,7 +478,7 @@ from routes.admin import admin_bp
 from routes.service_assignment import service_assignment_bp
 from routes.client_notifications import client_notifications_bp
 
-app.register_blueprint(main_bp)
+#-app.register_blueprint(main_bp)
 app.register_blueprint(admin_bp)
 app.register_blueprint(service_assignment_bp, url_prefix='/service')
 app.register_blueprint(client_notifications_bp, url_prefix='/client')
