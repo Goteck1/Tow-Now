@@ -5,11 +5,6 @@ import json
 import os
 import sys
 
-# Import models and utilities
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-from models.notification import Notification
-from utils.service_assignment import find_matching_providers, send_service_alerts, update_service_status
-
 # This blueprint will be registered in main.py
 service_assignment_bp = Blueprint('service_assignment', __name__)
 
@@ -29,6 +24,7 @@ def process_service_request(service_request_id):
     User = current_app.config['User']
     ServiceRequest = current_app.config['ServiceRequest']
     PricingConfig = current_app.config['PricingConfig']
+    Notification = current_app.config['Notification']
     
     # Get the service request
     service_request = ServiceRequest.query.get(service_request_id)
@@ -46,6 +42,9 @@ def process_service_request(service_request_id):
     if not pricing_config:
         flash('Pricing configuration not found.', 'danger')
         return redirect(url_for('admin_bp.dashboard'))
+    
+    # Import utility functions here to avoid circular imports
+    from utils.service_assignment import find_matching_providers, send_service_alerts
     
     # Find matching providers
     matching_providers = find_matching_providers(service_request, db, User)
@@ -77,6 +76,7 @@ def accept_service(notification_id):
     # Import models from main.py (will be set when blueprint is registered)
     db = current_app.config['db']
     ServiceRequest = current_app.config['ServiceRequest']
+    Notification = current_app.config['Notification']
     
     # Get the notification
     notification = Notification.query.get(notification_id)
@@ -105,13 +105,17 @@ def accept_service(notification_id):
         flash(f'This service request is already {service_request.status}.', 'warning')
         return redirect(url_for('main.service_provider_home'))
     
+    # Import utility function here to avoid circular imports
+    from utils.service_assignment import update_service_status
+    
     # Use the update_service_status utility to assign the service to this provider
     updated_request = update_service_status(
         service_request_id=service_request.id,
         new_status='Assigned',
         provider_id=current_user.id,
         db=db,
-        ServiceRequest=ServiceRequest
+        ServiceRequest=ServiceRequest,
+        Notification=Notification
     )
     
     if updated_request:
@@ -135,6 +139,7 @@ def update_service_request_status(service_request_id):
     # Import models from main.py (will be set when blueprint is registered)
     db = current_app.config['db']
     ServiceRequest = current_app.config['ServiceRequest']
+    Notification = current_app.config['Notification']
     
     # Get the service request
     service_request = ServiceRequest.query.get(service_request_id)
@@ -159,13 +164,17 @@ def update_service_request_status(service_request_id):
         flash(f'Invalid status: {new_status}', 'danger')
         return redirect(url_for('main.service_provider_home'))
     
+    # Import utility function here to avoid circular imports
+    from utils.service_assignment import update_service_status
+    
     # Use the update_service_status utility to update the status
     updated_request = update_service_status(
         service_request_id=service_request.id,
         new_status=new_status,
         provider_id=current_user.id,
         db=db,
-        ServiceRequest=ServiceRequest
+        ServiceRequest=ServiceRequest,
+        Notification=Notification
     )
     
     if updated_request:
@@ -190,12 +199,15 @@ def check_expired_requests():
     # Import models from main.py (will be set when blueprint is registered)
     db = current_app.config['db']
     ServiceRequest = current_app.config['ServiceRequest']
+    Notification = current_app.config['Notification']
     
     # Get expiry minutes from query parameter or use default
     expiry_minutes = request.args.get('expiry_minutes', 5, type=int)
     
-    # Use the check_expired_service_requests utility
+    # Import utility function here to avoid circular imports
     from utils.service_assignment import check_expired_service_requests
+    
+    # Use the check_expired_service_requests utility
     expired_request_ids = check_expired_service_requests(
         db=db,
         ServiceRequest=ServiceRequest,
