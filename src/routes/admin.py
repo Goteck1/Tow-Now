@@ -1,6 +1,12 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from functools import wraps
+from flask import (
+    Blueprint, render_template,
+    request, redirect, url_for, flash,
+)
 from flask_login import login_required, current_user
-from src.main import db, User, ServiceRequest, PricingConfig
+from src import db                                   # la única instancia
+from src.models import User, ServiceRequest, PricingConfig
+
 
 admin_bp = Blueprint('admin_bp', __name__, url_prefix='/admin')
 
