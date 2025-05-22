@@ -7,8 +7,6 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_migrate import Migrate
 
-from .config import Config
-
 # Inicializar extensiones
 db = SQLAlchemy()
 login_manager = LoginManager()
@@ -19,7 +17,7 @@ def create_app(config_class: type = Config):
     app.config.from_object(config_class)
 
     # Importar configuración
-    from config import Config
+    from .config import Config
     app.config.from_object(Config)
 
     # Inicializar extensiones
