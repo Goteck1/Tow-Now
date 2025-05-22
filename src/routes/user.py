@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify, request, render_template
 from src import db                       # ← la única instancia
 from src.models import User              # ← modelo desde el paquete
-from utils.geocode import reverse_geocode_osm
+from src.utils.geocode import reverse_geocode_osm
 
 user_bp = Blueprint("user_bp", __name__)   # usa el mismo nombre que registras
 
