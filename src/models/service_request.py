@@ -1,4 +1,4 @@
-from . import db
+from src import db 
 
 class ServiceRequest(db.Model):
     __tablename__ = 'service_requests'
