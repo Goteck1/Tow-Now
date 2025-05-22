@@ -1,45 +1,41 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
+from flask_migrate import Migrate
+from config import Config
 
+# Inicializar extensiones
 db = SQLAlchemy()
 login_manager = LoginManager()
+migrate = None
 
-def create_app(config_object=None):
+def create_app():
     app = Flask(__name__)
-
-    # Configurar la aplicación
-    if config_object:
-        app.config.from_object(config_object)
-    else:
-        # Config por defecto, puedes ajustar esto según tu config.py
-        app.config.from_pyfile("config.py", silent=True)
+    app.config.from_object(Config)
 
     # Inicializar extensiones
     db.init_app(app)
     login_manager.init_app(app)
-    login_manager.login_view = "main.signin"
-    login_manager.login_message = "Please sign in to access this page, or continue as a guest if available."
-    login_manager.login_message_category = "info"
+    
+    global migrate
+    migrate = Migrate(app, db)
 
-    # Importar y registrar Blueprints
-    from .routes.main import main_bp
-    from .routes.user import user_bp
-    from .routes.admin import admin_bp
-    from .routes.service_assignment import service_assignment_bp
-    from .routes.client_notifications import client_notifications_bp
+    # Configurar login
+    login_manager.login_view = 'auth.login'
+    login_manager.login_message = 'Please log in to access this page.'
+    login_manager.login_message_category = 'info'
 
+    # Registrar blueprints
+    from src.routes import main_bp, user_bp, admin_bp, service_assignment_bp, client_notifications_bp
     app.register_blueprint(main_bp)
-    app.register_blueprint(user_bp, url_prefix="/api")
-    app.register_blueprint(admin_bp, url_prefix="/admin")
-    app.register_blueprint(service_assignment_bp, url_prefix="/service")
-    app.register_blueprint(client_notifications_bp, url_prefix="/client")
+    app.register_blueprint(user_bp)
+    app.register_blueprint(admin_bp)
+    app.register_blueprint(service_assignment_bp)
+    app.register_blueprint(client_notifications_bp)
 
-    # Configurar el loader de usuario para Flask-Login
-    from .models.user import User
-
-    @login_manager.user_loader
-    def load_user(user_id):
-        return User.query.get(int(user_id))
+    # Crear carpeta de uploads si no existe
+    import os
+    if not os.path.exists(app.config['UPLOAD_FOLDER']):
+        os.makedirs(app.config['UPLOAD_FOLDER'])
 
     return app
