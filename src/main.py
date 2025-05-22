@@ -7,7 +7,7 @@ from werkzeug.utils import secure_filename
 from datetime import datetime
 
 #Crear la aplicacion
-from src import create_app, db
+from __init__ import create_app, db
 app = create_app()
 
 # Importar modelos después de crear la aplicación
