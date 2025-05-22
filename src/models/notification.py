@@ -1,9 +1,9 @@
+from src import db
 from flask_sqlalchemy import SQLAlchemy
 import datetime
 import json
 
-# Create a placeholder for the db instance that will be set from main.py
-db = None
+
 
 def init_notification_model(db_instance):
     """
