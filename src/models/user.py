@@ -1,9 +1,9 @@
+from src import db 
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 import json
 
-db = None  # This will be set from main.py
 
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
