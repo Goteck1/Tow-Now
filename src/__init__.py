@@ -13,11 +13,13 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
 
+    # Importar configuración
+    from config import Config
+    app.config.from_object(Config)
+
     # Inicializar extensiones
     db.init_app(app)
     login_manager.init_app(app)
-    
-    global migrate
     migrate = Migrate(app, db)
 
     # Configurar login
