@@ -3,6 +3,7 @@
 Dynamic Pricing Logic for TowNow using Mapbox Matrix API
 Reads configuration from a database object.
 """
+from src import db 
 import datetime
 import requests
 import os
