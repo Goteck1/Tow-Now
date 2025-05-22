@@ -5,10 +5,16 @@ from flask_login import LoginManager, login_user, logout_user, login_required, c
 from flask_migrate import Migrate
 from werkzeug.utils import secure_filename
 from datetime import datetime
+
+#Crear la aplicacion
 from src import create_app, db
+app = create_app()
+
+# Importar modelos después de crear la aplicación
 from src.models.user import User
 from src.models.service_request import ServiceRequest
 from src.models.pricing_logic import calculate_price  # Asumiendo que tienes esta función
+
 from src.routes import main_bp, user_bp, admin_bp, service_assignment_bp, client_notifications_bp
 
 # --- Flask App Factory Pattern ---
