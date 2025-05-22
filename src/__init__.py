@@ -7,16 +7,16 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_migrate import Migrate
 
-from config import Config
+from .config import Config
 
 # Inicializar extensiones
 db = SQLAlchemy()
 login_manager = LoginManager()
 migrate = None
 
-def create_app():
+def create_app(config_class: type = Config):
     app = Flask(__name__)
-    app.config.from_object(Config)
+    app.config.from_object(config_class)
 
     # Importar configuración
     from config import Config
