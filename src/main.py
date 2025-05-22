@@ -18,8 +18,8 @@ from src.models.pricing_logic import calculate_price  # Asumiendo que tienes est
 from src.routes import main_bp, user_bp, admin_bp, service_assignment_bp, client_notifications_bp
 
 # --- Flask App Factory Pattern ---
-app = create_app()
-migrate = Migrate(app, db)
+# --- app = create_app()
+# --- migrate = Migrate(app, db)
 
 # --- User Loader for Flask-Login ---
 @login_manager.user_loader
