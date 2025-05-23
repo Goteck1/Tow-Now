@@ -66,4 +66,13 @@ def create_app(config_class: type = Config) -> Flask:
     def health():
         return "pong", 200
 
+    # Imprimir todas las rutas disponibles
+    @app.before_first_request
+    def log_routes():
+        routes = []
+        for rule in app.url_map.iter_rules():
+            routes.append(f"{rule.endpoint}: {rule.rule}")
+        app.logger.info(f"Available routes: {sorted(routes)}")
+
+
     return app
