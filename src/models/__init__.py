@@ -1,6 +1,6 @@
 from .user import User
 from .service_request import ServiceRequest
-from .pricing_logic import PricingConfig 
+from .pricing_config import PricingConfig
 
 __all__ = [
     "User",
