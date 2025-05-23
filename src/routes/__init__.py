@@ -8,6 +8,7 @@ __all__ = [
     "main_bp",
     "user_bp",
     "admin_bp",
+    "api_bp",
     "service_assignment_bp",
     "client_notifications_bp",
 ]
