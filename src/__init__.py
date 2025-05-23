@@ -41,6 +41,10 @@ def create_app(config_class: type = Config) -> Flask:
     app.register_blueprint(client_notifications_bp)
     app.register_blueprint(api_bp)
 
+        # ---- DEBUG: imprimir rutas una vez en los logs ----
+    for rule in sorted(app.url_map.iter_rules(), key=lambda r: r.rule):
+        app.logger.info("ROUTE  ->  %-40s  ENDPOINT -> %s", rule.rule, rule.endpoint)
+
     # carpeta de uploads
     import os
     os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
