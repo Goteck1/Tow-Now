@@ -21,7 +21,7 @@
             </button>
             <ul class="nav-links">
                 <li><a href="{{ url_for('main.home') }}" class="{% if request.endpoint == 'main.home' %}active{% endif %}">Home</a></li>
-                <li><a href="{{ url_for('main.service_request') }}" class="{% if request.endpoint == 'main.service_request' %}active{% endif %}">Request Tow</a></li>
+                <li><a href="/service_request" class="{% if request.path == '/service_request' %}active{% endif %}">Request Tow</a></li>
                 <li><a href="{{ url_for('main.qa') }}" class="{% if request.endpoint == 'main.qa' %}active{% endif %}">Q&A</a></li>
                 <li><a href="{{ url_for('main.contact') }}" class="{% if request.endpoint == 'main.contact' %}active{% endif %}">Contact</a></li>
             
