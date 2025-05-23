@@ -31,12 +31,14 @@ def create_app(config_class: type = Config) -> Flask:
         main_bp,
         user_bp,
         admin_bp,
+        api_bp,  
         service_assignment_bp,
         client_notifications_bp,
     )
     app.register_blueprint(main_bp)
     app.register_blueprint(user_bp)
     app.register_blueprint(admin_bp)
+    app.register_blueprint(api_bp)
     app.register_blueprint(service_assignment_bp)
     app.register_blueprint(client_notifications_bp)
     app.register_blueprint(api_bp)
