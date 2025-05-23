@@ -39,6 +39,7 @@ def create_app(config_class: type = Config) -> Flask:
     app.register_blueprint(admin_bp)
     app.register_blueprint(service_assignment_bp)
     app.register_blueprint(client_notifications_bp)
+    app.register_blueprint(api_bp)
 
     # carpeta de uploads
     import os
