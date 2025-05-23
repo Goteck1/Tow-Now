@@ -4,30 +4,29 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_migrate import Migrate
 
-# 1) Importación RELATIVA; Config vive en este mismo paquete.
 from .config import Config
 
-# 2) Extensiones se instancian una sola vez a nivel módulo.
+# ---------- instancias únicas ----------
 db = SQLAlchemy()
 login_manager = LoginManager()
-migrate = Migrate()          # sin argumentos; se enlazará luego con init_app()
+migrate = Migrate()
 
+# ---------- factory ----------
 def create_app(config_class: type = Config) -> Flask:
-    # 3) Crea la aplicación
     app = Flask(__name__)
     app.config.from_object(config_class)
 
-    # 4) Inicializa extensiones
+    # inicializar extensiones
     db.init_app(app)
-    migrate.init_app(app, db)        # ahora sí les pasamos app y db
+    migrate.init_app(app, db)
     login_manager.init_app(app)
 
-    # 5) Configura LoginManager
+    # ajustes de Flask-Login
     login_manager.login_view = "auth.login"
     login_manager.login_message = "Please log in to access this page."
     login_manager.login_message_category = "info"
 
-    # 6) Registra blueprints
+    # registrar blueprints
     from src.routes import (
         main_bp,
         user_bp,
@@ -41,8 +40,24 @@ def create_app(config_class: type = Config) -> Flask:
     app.register_blueprint(service_assignment_bp)
     app.register_blueprint(client_notifications_bp)
 
-    # Crea carpeta de uploads si no existe
+    # carpeta de uploads
     import os
     os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
+
+    # user_loader
+    from src.models import User
+
+    @login_manager.user_loader
+    def load_user(user_id: str | int):
+        return User.query.get(int(user_id))
+
+    # carga de modelos para Alembic
+    with app.app_context():
+        import src.models  # noqa: F401
+
+    # health-check
+    @app.route("/health")
+    def health():
+        return "pong", 200
 
     return app
